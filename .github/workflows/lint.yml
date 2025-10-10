@@ -1,0 +1,91 @@
+name: Lint
+
+# Run linting checks on all pushes and pull requests
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  lint:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install black ruff mypy
+          # Install package dependencies for type checking
+          pip install -r requirements.txt
+
+      - name: Check code formatting with Black
+        run: |
+          echo "::group::Black formatting check"
+          black --check --diff --color src/ tests/ || {
+            echo "::error::Code formatting check failed. Run 'black src/ tests/' to fix."
+            exit 1
+          }
+          echo "::endgroup::"
+
+      - name: Lint with Ruff
+        run: |
+          echo "::group::Ruff linting"
+          ruff check src/ tests/ --output-format=github || {
+            echo "::error::Linting failed. Run 'ruff check --fix src/ tests/' to fix auto-fixable issues."
+            exit 1
+          }
+          echo "::endgroup::"
+
+      - name: Type check with mypy
+        run: |
+          echo "::group::mypy type checking"
+          mypy src/ --ignore-missing-imports --no-strict-optional --check-untyped-defs || {
+            echo "::warning::Type checking found issues. Review mypy output above."
+            # Don't fail on mypy errors for now, just warn
+            exit 0
+          }
+          echo "::endgroup::"
+        continue-on-error: true
+
+      - name: Check for common security issues
+        run: |
+          echo "::group::Security checks"
+          pip install bandit safety
+
+          # Check for security issues with bandit
+          bandit -r src/ -ll -f json -o bandit-report.json || true
+          bandit -r src/ -ll || echo "::warning::Bandit found potential security issues"
+
+          # Check for known vulnerabilities in dependencies
+          safety check --json || echo "::warning::Safety found vulnerable dependencies"
+          echo "::endgroup::"
+        continue-on-error: true
+
+      - name: Upload security reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Lint summary
+        if: success()
+        run: |
+          echo "::notice::All linting checks passed successfully!"
+          echo "✅ Black: Code formatting is correct"
+          echo "✅ Ruff: No linting issues found"
+          echo "✅ mypy: Type checking completed"

@@ -1,0 +1,145 @@
+version: '3.8'
+
+services:
+  customer-success-mcp:
+    build: .
+    container_name: 199os-cs-mcp
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/cs_mcp_db
+      - REDIS_URL=redis://:password@redis:6379/0
+    env_file:
+      - .env
+    volumes:
+      # Mount runtime directories for persistence
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - ./config:/app/config
+      - ./credentials:/app/credentials
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - cs-mcp-network
+    # Health check inherited from Dockerfile
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM); result = sock.connect_ex(('localhost', 8080)); sock.close(); exit(0 if result == 0 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    # Resource limits to prevent runaway processes
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    # Structured logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service,environment"
+    labels:
+      - "service=customer-success-mcp"
+      - "environment=development"
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: cs-mcp-postgres
+    environment:
+      - POSTGRES_DB=cs_mcp_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - cs-mcp-network
+    restart: unless-stopped
+    # Health check for PostgreSQL
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    # Structured logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      - "service=postgres"
+      - "environment=development"
+
+  redis:
+    image: redis:7-alpine
+    container_name: cs-mcp-redis
+    command: redis-server --requirepass password --maxmemory 512mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - cs-mcp-network
+    restart: unless-stopped
+    # Health check for Redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    # Structured logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      - "service=redis"
+      - "environment=development"
+
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  cs-mcp-network:
+    driver: bridge
+    # Network isolation - only containers in this network can communicate
+    internal: false  # Set to true in production to isolate from external access
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16

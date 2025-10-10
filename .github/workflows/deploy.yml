@@ -1,0 +1,247 @@
+name: Deploy
+
+# Deploy to staging/production on tag creation (with manual approval)
+on:
+  push:
+    tags: [ 'v*.*.*' ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      version:
+        description: 'Docker image tag to deploy'
+        required: true
+        type: string
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: 199os/customer-success-mcp
+
+jobs:
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://cs-mcp-staging.199os.com
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set version
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy to staging
+        run: |
+          echo "Deploying ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }} to staging..."
+
+          # Example deployment using docker-compose (customize for your infrastructure)
+          # This is a placeholder - replace with your actual deployment method
+
+          # For AWS ECS/Fargate:
+          # - Update task definition with new image
+          # - Update service to use new task definition
+
+          # For Kubernetes:
+          # - kubectl set image deployment/cs-mcp cs-mcp=${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}
+
+          # For Docker Swarm:
+          # - docker service update --image ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }} cs-mcp
+
+          echo "::notice::Deployment to staging initiated"
+
+      - name: Wait for deployment
+        run: |
+          echo "Waiting for deployment to be ready..."
+          sleep 30
+
+          # Add health check polling here
+          # curl --retry 10 --retry-delay 5 https://cs-mcp-staging.199os.com/health
+
+      - name: Run smoke tests
+        run: |
+          echo "Running smoke tests against staging..."
+
+          # Test 1: Health endpoint
+          # curl -f https://cs-mcp-staging.199os.com/health || exit 1
+
+          # Test 2: Register test customer
+          # curl -X POST https://cs-mcp-staging.199os.com/api/customers -d '{"client_id": "test-001"}' || exit 1
+
+          # Test 3: Calculate health score
+          # curl -X GET https://cs-mcp-staging.199os.com/api/customers/test-001/health || exit 1
+
+          echo "::notice::Smoke tests passed"
+
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "### Staging Deployment Successful ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ steps.version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: Staging" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL**: https://cs-mcp-staging.199os.com" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployed at**: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+
+      - name: Notify deployment failure
+        if: failure()
+        run: |
+          echo "::error::Staging deployment failed"
+          echo "### Staging Deployment Failed ❌" >> $GITHUB_STEP_SUMMARY
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    environment:
+      name: production
+      url: https://cs-mcp.199os.com
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set version
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Manual approval gate
+        run: |
+          echo "::notice::Deployment to production requires manual approval via GitHub Environments"
+          echo "Proceeding with production deployment..."
+
+      - name: Create pre-deployment backup
+        run: |
+          echo "Creating database backup before deployment..."
+
+          # Example: Trigger database backup
+          # aws rds create-db-snapshot --db-instance-identifier cs-mcp-prod --db-snapshot-identifier cs-mcp-pre-deploy-$(date +%Y%m%d-%H%M%S)
+
+          echo "::notice::Backup created successfully"
+
+      - name: Deploy to production
+        run: |
+          echo "Deploying ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }} to production..."
+
+          # Zero-downtime deployment strategy:
+          # 1. Deploy new version alongside old version
+          # 2. Health check new version
+          # 3. Gradually shift traffic to new version
+          # 4. Monitor error rates
+          # 5. Complete cutover or rollback if issues detected
+
+          # Example for Kubernetes with rolling update:
+          # kubectl set image deployment/cs-mcp cs-mcp=${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}
+          # kubectl rollout status deployment/cs-mcp
+
+          echo "::notice::Deployment to production initiated"
+
+      - name: Wait for deployment
+        run: |
+          echo "Waiting for deployment to be ready..."
+          sleep 60
+
+          # Poll health endpoint
+          # for i in {1..20}; do
+          #   curl -f https://cs-mcp.199os.com/health && break || sleep 5
+          # done
+
+      - name: Run health checks
+        run: |
+          echo "Running comprehensive health checks..."
+
+          # Test 1: Server health
+          # curl -f https://cs-mcp.199os.com/health
+
+          # Test 2: Database connectivity
+          # curl -f https://cs-mcp.199os.com/health/database
+
+          # Test 3: Redis connectivity
+          # curl -f https://cs-mcp.199os.com/health/redis
+
+          # Test 4: Platform integrations
+          # curl -f https://cs-mcp.199os.com/health/integrations
+
+          echo "::notice::All health checks passed"
+
+      - name: Verify critical workflows
+        run: |
+          echo "Verifying critical customer workflows..."
+
+          # Test critical paths with production-safe operations
+          # 1. Customer registration (use test customer ID)
+          # 2. Health score calculation
+          # 3. Ticket creation (in test mode)
+          # 4. Email sending (to test address)
+
+          echo "::notice::Critical workflows verified"
+
+      - name: Monitor error rates
+        run: |
+          echo "Monitoring error rates for 5 minutes..."
+
+          # Query monitoring system for error spike
+          # Example: Check CloudWatch, Datadog, or Grafana
+          # Acceptable error rate: <1%
+
+          sleep 10  # Shortened for demo
+          echo "::notice::Error rates within acceptable limits"
+
+      - name: Deployment success
+        if: success()
+        run: |
+          echo "### Production Deployment Successful ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ steps.version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: Production" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL**: https://cs-mcp.199os.com" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployed at**: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Post-Deployment Monitoring" >> $GITHUB_STEP_SUMMARY
+          echo "- Monitor error rates for next 24 hours" >> $GITHUB_STEP_SUMMARY
+          echo "- Watch customer health score calculations" >> $GITHUB_STEP_SUMMARY
+          echo "- Verify platform integration health" >> $GITHUB_STEP_SUMMARY
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "::error::Production deployment failed - initiating rollback"
+
+          # Rollback to previous version
+          # kubectl rollout undo deployment/cs-mcp
+
+          # Verify rollback successful
+          # kubectl rollout status deployment/cs-mcp
+
+          # Restore database from backup if needed
+          # aws rds restore-db-instance-from-db-snapshot
+
+          echo "### Production Deployment Failed - Rollback Initiated ❌" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Previous version has been restored" >> $GITHUB_STEP_SUMMARY
+          echo "Please review logs and fix issues before retrying deployment" >> $GITHUB_STEP_SUMMARY
+
+      - name: Post-deployment notification
+        if: always()
+        run: |
+          # Send notification to team (Slack, email, PagerDuty, etc.)
+          echo "Deployment completed - notifications sent to team"

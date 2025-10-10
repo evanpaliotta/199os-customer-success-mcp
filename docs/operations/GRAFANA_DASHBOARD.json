@@ -1,0 +1,507 @@
+{
+  "dashboard": {
+    "title": "Customer Success MCP Performance Dashboard",
+    "description": "Performance monitoring dashboard for 199OS Customer Success MCP Server",
+    "tags": ["customer-success", "mcp", "performance"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Tool Execution Rate (req/sec)",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "rate(cs_mcp_tool_execution_total[5m])",
+            "legendFormat": "{{tool_name}} - {{status}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "reqps",
+            "label": "Requests/sec"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Tool Execution Duration (p50, p95, p99)",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 0,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(cs_mcp_tool_execution_duration_seconds_bucket[5m]))",
+            "legendFormat": "p50 - {{tool_name}}",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(cs_mcp_tool_execution_duration_seconds_bucket[5m]))",
+            "legendFormat": "p95 - {{tool_name}}",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(cs_mcp_tool_execution_duration_seconds_bucket[5m]))",
+            "legendFormat": "p99 - {{tool_name}}",
+            "refId": "C"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "Duration"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Error Rate (errors/sec)",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 8,
+          "w": 8,
+          "h": 6
+        },
+        "targets": [
+          {
+            "expr": "rate(cs_mcp_errors_total[5m])",
+            "legendFormat": "{{error_type}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "errps",
+            "label": "Errors/sec"
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [0.01],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": ["A", "5m", "now"]
+              },
+              "reducer": {
+                "params": [],
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "frequency": "60s",
+          "handler": 1,
+          "name": "High Error Rate Alert",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      },
+      {
+        "id": 4,
+        "title": "Success Rate (%)",
+        "type": "stat",
+        "gridPos": {
+          "x": 8,
+          "y": 8,
+          "w": 4,
+          "h": 6
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(cs_mcp_tool_execution_total{status=\"success\"}[5m])) / sum(rate(cs_mcp_tool_execution_total[5m])) * 100",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          },
+          "textMode": "value_and_name",
+          "colorMode": "value",
+          "graphMode": "area"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "red"},
+                {"value": 95, "color": "yellow"},
+                {"value": 99, "color": "green"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Active Connections",
+        "type": "stat",
+        "gridPos": {
+          "x": 12,
+          "y": 8,
+          "w": 4,
+          "h": 6
+        },
+        "targets": [
+          {
+            "expr": "cs_mcp_active_connections",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "orientation": "auto",
+          "textMode": "value_and_name",
+          "colorMode": "value",
+          "graphMode": "area"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Memory Usage",
+        "type": "graph",
+        "gridPos": {
+          "x": 16,
+          "y": 8,
+          "w": 8,
+          "h": 6
+        },
+        "targets": [
+          {
+            "expr": "cs_mcp_memory_usage_bytes",
+            "legendFormat": "Memory Usage",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "bytes",
+            "label": "Memory"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Database Query Duration (p95)",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 14,
+          "w": 12,
+          "h": 7
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(cs_mcp_database_query_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{query_type}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "Duration"
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 0.05,
+            "colorMode": "critical",
+            "op": "gt",
+            "fill": true,
+            "line": true
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Database Query Rate",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 14,
+          "w": 12,
+          "h": 7
+        },
+        "targets": [
+          {
+            "expr": "rate(cs_mcp_database_query_total[5m])",
+            "legendFormat": "{{query_type}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "qps",
+            "label": "Queries/sec"
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Platform API Call Duration (p95)",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 21,
+          "w": 12,
+          "h": 7
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(cs_mcp_platform_api_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{integration}} - {{endpoint}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "Duration"
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 2,
+            "colorMode": "critical",
+            "op": "gt",
+            "fill": true,
+            "line": true
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Platform API Call Rate",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 21,
+          "w": 12,
+          "h": 7
+        },
+        "targets": [
+          {
+            "expr": "rate(cs_mcp_platform_api_calls_total[5m])",
+            "legendFormat": "{{integration}} - {{endpoint}} - {{status}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "reqps",
+            "label": "Requests/sec"
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "title": "Cache Hit Rate",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 28,
+          "w": 12,
+          "h": 6
+        },
+        "targets": [
+          {
+            "expr": "rate(cs_mcp_cache_hits_total[5m]) / (rate(cs_mcp_cache_hits_total[5m]) + rate(cs_mcp_cache_misses_total[5m])) * 100",
+            "legendFormat": "{{cache_type}} Hit Rate",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "percent",
+            "label": "Hit Rate %"
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 70,
+            "colorMode": "custom",
+            "op": "lt",
+            "fill": true,
+            "line": true,
+            "fillColor": "rgba(255, 0, 0, 0.2)"
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "title": "Health Score Calculation Performance",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 28,
+          "w": 12,
+          "h": 6
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(cs_mcp_health_score_calculation_seconds_bucket[5m]))",
+            "legendFormat": "p95 Health Score Calculation",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(cs_mcp_health_score_calculation_seconds_bucket[5m]))",
+            "legendFormat": "p99 Health Score Calculation",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "Duration"
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 0.1,
+            "colorMode": "critical",
+            "op": "gt",
+            "fill": true,
+            "line": true
+          }
+        ]
+      },
+      {
+        "id": 13,
+        "title": "Top 10 Slowest Tools (p95)",
+        "type": "table",
+        "gridPos": {
+          "x": 0,
+          "y": 34,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "topk(10, histogram_quantile(0.95, rate(cs_mcp_tool_execution_duration_seconds_bucket[5m])))",
+            "format": "table",
+            "instant": true,
+            "refId": "A"
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true
+              },
+              "renameByName": {
+                "tool_name": "Tool Name",
+                "Value": "p95 Duration (s)"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": 14,
+        "title": "Most Called Tools (last 5m)",
+        "type": "table",
+        "gridPos": {
+          "x": 12,
+          "y": 34,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "topk(10, sum(rate(cs_mcp_tool_execution_total[5m])) by (tool_name))",
+            "format": "table",
+            "instant": true,
+            "refId": "A"
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true
+              },
+              "renameByName": {
+                "tool_name": "Tool Name",
+                "Value": "Calls/sec"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "datasource",
+          "type": "datasource",
+          "query": "prometheus"
+        },
+        {
+          "name": "tool_name",
+          "type": "query",
+          "datasource": "$datasource",
+          "query": "label_values(cs_mcp_tool_execution_total, tool_name)",
+          "multi": true,
+          "includeAll": true
+        },
+        {
+          "name": "integration",
+          "type": "query",
+          "datasource": "$datasource",
+          "query": "label_values(cs_mcp_platform_api_calls_total, integration)",
+          "multi": true,
+          "includeAll": true
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "datasource": "$datasource",
+          "enable": true,
+          "expr": "changes(cs_mcp_tool_execution_total[5m]) > 0",
+          "iconColor": "blue",
+          "name": "Deployments",
+          "tagKeys": "version"
+        }
+      ]
+    }
+  }
+}

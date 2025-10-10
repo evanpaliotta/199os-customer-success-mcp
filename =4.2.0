@@ -1,0 +1,18 @@
+Collecting python-intercom
+  Downloading python_intercom-4.0.0-py3-none-any.whl (780 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 781.0/781.0 kB 4.0 MB/s eta 0:00:00
+Requirement already satisfied: pydantic-core<3.0.0,>=2.18.2 in /Users/evanpaliotta/anaconda3/lib/python3.10/site-packages (from python-intercom) (2.33.2)
+Requirement already satisfied: pydantic>=1.9.2 in /Users/evanpaliotta/anaconda3/lib/python3.10/site-packages (from python-intercom) (2.11.7)
+Requirement already satisfied: httpx>=0.21.2 in /Users/evanpaliotta/anaconda3/lib/python3.10/site-packages (from python-intercom) (0.28.1)
+Requirement already satisfied: typing_extensions>=4.0.0 in /Users/evanpaliotta/anaconda3/lib/python3.10/site-packages (from python-intercom) (4.14.0)
+Requirement already satisfied: httpcore==1.* in /Users/evanpaliotta/anaconda3/lib/python3.10/site-packages (from httpx>=0.21.2->python-intercom) (1.0.9)
+Requirement already satisfied: certifi in /Users/evanpaliotta/anaconda3/lib/python3.10/site-packages (from httpx>=0.21.2->python-intercom) (2022.12.7)
+Requirement already satisfied: anyio in /Users/evanpaliotta/anaconda3/lib/python3.10/site-packages (from httpx>=0.21.2->python-intercom) (4.9.0)
+Requirement already satisfied: idna in /Users/evanpaliotta/anaconda3/lib/python3.10/site-packages (from httpx>=0.21.2->python-intercom) (3.4)
+Requirement already satisfied: h11>=0.16 in /Users/evanpaliotta/anaconda3/lib/python3.10/site-packages (from httpcore==1.*->httpx>=0.21.2->python-intercom) (0.16.0)
+Requirement already satisfied: annotated-types>=0.6.0 in /Users/evanpaliotta/anaconda3/lib/python3.10/site-packages (from pydantic>=1.9.2->python-intercom) (0.7.0)
+Requirement already satisfied: typing-inspection>=0.4.0 in /Users/evanpaliotta/anaconda3/lib/python3.10/site-packages (from pydantic>=1.9.2->python-intercom) (0.4.1)
+Requirement already satisfied: sniffio>=1.1 in /Users/evanpaliotta/anaconda3/lib/python3.10/site-packages (from anyio->httpx>=0.21.2->python-intercom) (1.2.0)
+Requirement already satisfied: exceptiongroup>=1.0.2 in /Users/evanpaliotta/anaconda3/lib/python3.10/site-packages (from anyio->httpx>=0.21.2->python-intercom) (1.3.0)
+Installing collected packages: python-intercom
+Successfully installed python-intercom-4.0.0

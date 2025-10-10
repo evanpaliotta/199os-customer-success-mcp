@@ -1,0 +1,104 @@
+version: '3.8'
+
+services:
+  # Test PostgreSQL Database
+  test-postgres:
+    image: postgres:16-alpine
+    container_name: cs-mcp-test-postgres
+    environment:
+      POSTGRES_USER: test_cs
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_DB: test_cs_mcp
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5433:5432"
+    volumes:
+      - test-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_cs -d test_cs_mcp"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - test-network
+
+  # Test Redis Cache
+  test-redis:
+    image: redis:7-alpine
+    container_name: cs-mcp-test-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6380:6379"
+    volumes:
+      - test-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - test-network
+
+  # Test CS MCP Server (optional - for integration tests)
+  test-cs-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cs-mcp-test-server
+    environment:
+      # Database Configuration
+      DATABASE_URL: postgresql://test_cs:test_password@test-postgres:5432/test_cs_mcp
+      REDIS_URL: redis://test-redis:6379/0
+
+      # Security Configuration
+      ENCRYPTION_KEY: dGVzdF9lbmNyeXB0aW9uX2tleV8zMl9jaGFyc19sb25n  # base64 encoded test key
+      JWT_SECRET: test_jwt_secret_32_characters_minimum
+
+      # Logging
+      LOG_LEVEL: DEBUG
+      LOG_FORMAT: json
+
+      # Test Environment Flag
+      ENVIRONMENT: test
+
+      # Platform Integration Test Credentials (mock values)
+      ZENDESK_SUBDOMAIN: test
+      ZENDESK_EMAIL: test@test.com
+      ZENDESK_API_TOKEN: test_zendesk_token
+      INTERCOM_ACCESS_TOKEN: test_intercom_token
+      MIXPANEL_PROJECT_TOKEN: test_mixpanel_token
+      MIXPANEL_API_SECRET: test_mixpanel_secret
+      SENDGRID_API_KEY: test_sendgrid_key
+      SENDGRID_FROM_EMAIL: test@example.com
+      SENDGRID_FROM_NAME: Test CS Team
+
+    ports:
+      - "8081:8080"
+    depends_on:
+      test-postgres:
+        condition: service_healthy
+      test-redis:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src:ro
+      - ./tests:/app/tests:ro
+      - ./config:/app/config:ro
+      - test-logs:/app/logs
+    networks:
+      - test-network
+    command: ["python", "-m", "pytest", "tests/", "-v", "--tb=short"]
+    profiles:
+      - integration-tests
+
+volumes:
+  test-postgres-data:
+    name: cs-mcp-test-postgres-data
+  test-redis-data:
+    name: cs-mcp-test-redis-data
+  test-logs:
+    name: cs-mcp-test-logs
+
+networks:
+  test-network:
+    name: cs-mcp-test-network
+    driver: bridge

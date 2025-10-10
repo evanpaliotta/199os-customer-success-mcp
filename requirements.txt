@@ -1,0 +1,68 @@
+# Core MCP and FastMCP
+fastmcp>=0.3.0
+mcp>=0.9.0
+
+# Data Models & Validation
+pydantic>=2.0.0
+python-dotenv>=1.0.0
+packaging>=21.0  # For version parsing in validation
+
+# Logging & Monitoring
+structlog>=23.0.0
+prometheus-client>=0.19.0
+psutil>=5.9.0
+
+# Async Support
+asyncio
+aiohttp>=3.9.0
+requests>=2.31.0
+
+# Database
+sqlalchemy>=2.0.0
+alembic>=1.16.0
+psycopg2-binary>=2.9.0
+redis>=4.5.0  # For Redis caching and sessions
+
+# Data Science & ML
+numpy>=1.21.0
+pandas>=1.3.0
+scikit-learn>=1.0.0
+matplotlib>=3.3.0
+
+# Testing & Mocking
+faker>=18.0.0
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+pytest-mock>=3.12.0
+
+# Security
+cryptography>=41.0.0
+
+# Customer Success Platform Integrations
+zenpy>=2.0.42  # Zendesk
+python-intercom>=4.2.0  # Intercom
+mixpanel>=4.10.0  # Mixpanel
+freshdesk>=0.1.8  # Freshdesk
+sendgrid>=6.10.0  # SendGrid email
+twilio>=8.10.0  # Twilio (SMS/voice support)
+
+# CRM Sync (reuse from Sales MCP)
+simple-salesforce>=1.12.0
+hubspot-api-client>=8.0.0
+
+# Analytics & Tracking
+segment-analytics-python>=2.2.0
+amplitude-analytics>=1.3.0
+
+# Communication Tools
+google-api-python-client>=2.100.0
+google-auth-httplib2>=0.1.1
+google-auth-oauthlib>=1.1.0
+
+# Knowledge Base & Documentation
+requests-html>=0.10.0
+beautifulsoup4>=4.12.0
+
+# Survey & Feedback
+typeform>=0.4.0

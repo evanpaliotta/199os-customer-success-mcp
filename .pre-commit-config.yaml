@@ -1,0 +1,133 @@
+# Pre-commit hooks for Customer Success MCP
+# Install: pip install pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # Code formatting with Black
+  - repo: https://github.com/psf/black
+    rev: 24.3.0
+    hooks:
+      - id: black
+        name: Format code with Black
+        language_version: python3.11
+        args: [--line-length=100]
+
+  # Linting with Ruff (faster alternative to flake8, pylint)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.3.4
+    hooks:
+      - id: ruff
+        name: Lint with Ruff
+        args: [--fix, --exit-non-zero-on-fix]
+
+  # Type checking with mypy
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.9.0
+    hooks:
+      - id: mypy
+        name: Type check with mypy
+        args: [--ignore-missing-imports, --no-strict-optional, --check-untyped-defs]
+        additional_dependencies:
+          - types-requests
+          - types-redis
+        exclude: ^(tests/|migrations/)
+
+  # Generic file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      # Remove trailing whitespace
+      - id: trailing-whitespace
+        name: Trim trailing whitespace
+        args: [--markdown-linebreak-ext=md]
+
+      # Ensure files end with newline
+      - id: end-of-file-fixer
+        name: Fix end of files
+
+      # Check for files that would conflict on case-insensitive filesystems
+      - id: check-case-conflict
+        name: Check for case conflicts
+
+      # Check for merge conflicts
+      - id: check-merge-conflict
+        name: Check for merge conflicts
+
+      # Check YAML syntax
+      - id: check-yaml
+        name: Check YAML syntax
+        args: [--safe]
+
+      # Check TOML syntax
+      - id: check-toml
+        name: Check TOML syntax
+
+      # Check JSON syntax
+      - id: check-json
+        name: Check JSON syntax
+
+      # Prevent large files from being committed
+      - id: check-added-large-files
+        name: Check for large files
+        args: [--maxkb=1000]
+
+      # Check Python AST
+      - id: check-ast
+        name: Check Python AST
+
+      # Check for debugger imports
+      - id: debug-statements
+        name: Check for debugger statements
+
+      # Detect private keys
+      - id: detect-private-key
+        name: Detect private keys
+
+      # Fix double quoted strings (prefer single quotes in Python)
+      - id: double-quote-string-fixer
+        name: Fix double quoted strings
+        exclude: ^(tests/|migrations/)
+
+  # Security checks with bandit
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.8
+    hooks:
+      - id: bandit
+        name: Security check with Bandit
+        args: [-ll, -i]
+        exclude: ^(tests/|migrations/)
+
+  # Check for outdated dependencies (optional, can be slow)
+  # - repo: https://github.com/Lucas-C/pre-commit-hooks-safety
+  #   rev: v1.3.3
+  #   hooks:
+  #     - id: python-safety-dependencies-check
+  #       name: Check for vulnerable dependencies
+
+# Configuration
+default_language_version:
+  python: python3.11
+
+# Skip hooks for specific file patterns
+exclude: |
+  (?x)^(
+      \.git/|
+      \.venv/|
+      venv/|
+      __pycache__/|
+      \.pytest_cache/|
+      \.mypy_cache/|
+      \.ruff_cache/|
+      htmlcov/|
+      dist/|
+      build/|
+      \.egg-info/|
+      migrations/versions/.*\.py$
+  )
+
+# Fail fast - stop on first failure
+fail_fast: false
+
+# CI mode - skip hooks that require network access
+ci:
+  skip: []

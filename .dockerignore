@@ -1,0 +1,78 @@
+# Git files
+.git/
+.gitignore
+.gitattributes
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# Testing
+tests/
+test_*.py
+*_test.py
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.hypothesis/
+
+# Documentation
+docs/
+*.md
+!README.md
+*.rst
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Development files
+.env
+.env.local
+.env.*.local
+*.log
+
+# Runtime directories (should be mounted as volumes)
+logs/
+data/
+credentials/
+config/preferences/
+config/audit_logs/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+azure-pipelines.yml
+
+# Docker files (no need to copy these into the image)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Other
+*.bak
+*.tmp
+.mypy_cache/
+.ruff_cache/
+*.pid

@@ -1,0 +1,99 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+logs/
+*.log
+
+# Credentials & Secrets
+credentials/
+*.pem
+*.key
+*.crt
+*.p12
+
+# Data & Databases
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Conversation contexts
+conversation_contexts/
+
+# Config files with secrets
+config/preferences/
+config/audit_logs/
+config/*.json
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+coverage.xml
+*.cover
+.hypothesis/
+.mypy_cache/
+.ruff_cache/
+
+# Security Reports
+security_reports/
+*.sarif
+
+# Load Testing Reports
+load_test_report.html
+locust_report.html
+
+# Docker volumes
+postgres_data/
+redis_data/
+test-postgres-data/
+test-redis-data/
+test-logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
