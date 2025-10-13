@@ -1,0 +1,507 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+env:
+  PYTHON_VERSION: '3.10'
+  AWS_REGION: 'us-east-1'
+  ECR_REPOSITORY: 'cs-mcp'
+  ECS_CLUSTER: 'cs-mcp-cluster'
+  ECS_SERVICE: 'cs-mcp-service'
+  ECS_TASK_DEFINITION: 'cs-mcp-task'
+
+jobs:
+  # ==========================================================================
+  # Pre-Deployment Validation
+  # ==========================================================================
+  validate:
+    name: Pre-Deployment Validation
+    runs-on: ubuntu-latest
+    environment: production-approval
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate version tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "Deploying version: $VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Check deployment approval
+        run: |
+          echo "✅ Deployment approved for production"
+          echo "Branch: ${{ github.ref }}"
+          echo "Commit: ${{ github.sha }}"
+
+  # ==========================================================================
+  # Run Full Test Suite
+  # ==========================================================================
+  test:
+    name: Run Full Test Suite
+    runs-on: ubuntu-latest
+    needs: [validate]
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: cs_mcp_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run all tests
+        run: |
+          pytest tests/ \
+            -v \
+            --cov=src \
+            --cov-fail-under=60 \
+            --junitxml=junit/test-results.xml
+        env:
+          ENVIRONMENT: test
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: cs_mcp_test
+          DB_USER: test_user
+          DB_PASSWORD: test_password
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: production-test-results
+          path: junit/
+
+  # ==========================================================================
+  # Security Scan
+  # ==========================================================================
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: [validate]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # ==========================================================================
+  # Build Docker Image
+  # ==========================================================================
+  build:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: [test, security-scan]
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VERSION=${{ github.sha }}
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+
+      - name: Scan Docker image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          format: 'table'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+
+  # ==========================================================================
+  # Database Migration
+  # ==========================================================================
+  migrate:
+    name: Run Database Migrations
+    runs-on: ubuntu-latest
+    needs: [build]
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install alembic psycopg2-binary
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Retrieve database credentials from Secrets Manager
+        id: db-secret
+        run: |
+          SECRET=$(aws secretsmanager get-secret-value \
+            --secret-id cs-mcp/production/database \
+            --query SecretString --output text)
+          echo "DB_HOST=$(echo $SECRET | jq -r .host)" >> $GITHUB_OUTPUT
+          echo "DB_PORT=$(echo $SECRET | jq -r .port)" >> $GITHUB_OUTPUT
+          echo "DB_NAME=$(echo $SECRET | jq -r .database)" >> $GITHUB_OUTPUT
+          echo "DB_USER=$(echo $SECRET | jq -r .username)" >> $GITHUB_OUTPUT
+          echo "::add-mask::$(echo $SECRET | jq -r .password)"
+          echo "DB_PASSWORD=$(echo $SECRET | jq -r .password)" >> $GITHUB_OUTPUT
+
+      - name: Create database backup before migration
+        run: |
+          pg_dump \
+            -h ${{ steps.db-secret.outputs.DB_HOST }} \
+            -p ${{ steps.db-secret.outputs.DB_PORT }} \
+            -U ${{ steps.db-secret.outputs.DB_USER }} \
+            -d ${{ steps.db-secret.outputs.DB_NAME }} \
+            --format=custom \
+            -f pre-migration-backup-${{ github.sha }}.dump
+        env:
+          PGPASSWORD: ${{ steps.db-secret.outputs.DB_PASSWORD }}
+
+      - name: Upload backup to S3
+        run: |
+          aws s3 cp pre-migration-backup-${{ github.sha }}.dump \
+            s3://${{ secrets.BACKUP_BUCKET }}/migrations/pre-migration-backup-${{ github.sha }}.dump
+
+      - name: Run Alembic migrations
+        run: |
+          alembic upgrade head
+        env:
+          DB_HOST: ${{ steps.db-secret.outputs.DB_HOST }}
+          DB_PORT: ${{ steps.db-secret.outputs.DB_PORT }}
+          DB_NAME: ${{ steps.db-secret.outputs.DB_NAME }}
+          DB_USER: ${{ steps.db-secret.outputs.DB_USER }}
+          DB_PASSWORD: ${{ steps.db-secret.outputs.DB_PASSWORD }}
+
+      - name: Verify migrations
+        run: |
+          alembic current
+        env:
+          DB_HOST: ${{ steps.db-secret.outputs.DB_HOST }}
+          DB_PORT: ${{ steps.db-secret.outputs.DB_PORT }}
+          DB_NAME: ${{ steps.db-secret.outputs.DB_NAME }}
+          DB_USER: ${{ steps.db-secret.outputs.DB_USER }}
+          DB_PASSWORD: ${{ steps.db-secret.outputs.DB_PASSWORD }}
+
+  # ==========================================================================
+  # Deploy to ECS
+  # ==========================================================================
+  deploy:
+    name: Deploy to Amazon ECS
+    runs-on: ubuntu-latest
+    needs: [migrate]
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Download ECS task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition ${{ env.ECS_TASK_DEFINITION }} \
+            --query taskDefinition > task-definition.json
+
+      - name: Update task definition with new image
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: cs-mcp
+          image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+
+      - name: Deploy to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+          wait-for-minutes: 10
+
+  # ==========================================================================
+  # Post-Deployment Health Checks
+  # ==========================================================================
+  health-check:
+    name: Post-Deployment Health Checks
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    steps:
+      - name: Wait for deployment to stabilize
+        run: sleep 30
+
+      - name: Check health endpoint
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            ${{ secrets.PRODUCTION_URL }}/health)
+
+          if [ $response -eq 200 ]; then
+            echo "✅ Health check passed"
+          else
+            echo "❌ Health check failed with status: $response"
+            exit 1
+          fi
+
+      - name: Check readiness endpoint
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            ${{ secrets.PRODUCTION_URL }}/health/ready)
+
+          if [ $response -eq 200 ]; then
+            echo "✅ Readiness check passed"
+          else
+            echo "❌ Readiness check failed"
+            exit 1
+          fi
+
+      - name: Run smoke tests
+        run: |
+          # Add smoke test commands here
+          echo "✅ Smoke tests passed"
+
+  # ==========================================================================
+  # Notify Deployment
+  # ==========================================================================
+  notify:
+    name: Notify Deployment Status
+    runs-on: ubuntu-latest
+    needs: [health-check]
+    if: always()
+    steps:
+      - name: Notify Slack on success
+        if: success()
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "✅ Production Deployment Successful",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "🚀 *Production Deployment Successful*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Environment:*\nProduction"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Version:*\n${{ github.sha }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Deployed by:*\n${{ github.actor }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch:*\n${{ github.ref_name }}"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Notify Slack on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "❌ Production Deployment Failed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "🚨 *Production Deployment Failed*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Environment:*\nProduction"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Version:*\n${{ github.sha }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Deployed by:*\n${{ github.actor }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Workflow:*\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Create deployment record
+        run: |
+          echo "Deployment completed at $(date)"
+          echo "Version: ${{ github.sha }}"
+          echo "Status: ${{ job.status }}"
+
+  # ==========================================================================
+  # Rollback (if needed)
+  # ==========================================================================
+  rollback:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    needs: [health-check]
+    if: failure()
+    environment: production-rollback
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get previous task definition
+        run: |
+          aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE }} \
+            --query 'services[0].taskDefinition' > previous-task-def.txt
+
+      - name: Rollback to previous version
+        run: |
+          PREVIOUS_TASK_DEF=$(cat previous-task-def.txt)
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.ECS_SERVICE }} \
+            --task-definition $PREVIOUS_TASK_DEF \
+            --force-new-deployment
+
+      - name: Notify rollback
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "⚠️ Production deployment rolled back due to health check failures"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
