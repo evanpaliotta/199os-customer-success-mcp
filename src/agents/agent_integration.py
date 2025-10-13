@@ -104,7 +104,7 @@ class AdaptiveSalesAgent:
             
             # Enhance result with intelligence
             enhanced_result = self._enhance_result_with_intelligence(
-                result, confidence_report, available_sources, process_num, business_function
+                result, confidence_report, available_sources, process_num, business_function, client_id
             )
             
             # Update performance tracking
@@ -154,17 +154,18 @@ class AdaptiveSalesAgent:
             return error_result
     
     def _enhance_result_with_intelligence(
-        self, 
-        original_result: Dict[str, Any], 
-        confidence_report: Dict[str, Any], 
+        self,
+        original_result: Dict[str, Any],
+        confidence_report: Dict[str, Any],
         available_sources: Dict[str, Any],
         process_num: int,
-        business_function: str
+        business_function: str,
+        client_id: str
     ) -> Dict[str, Any]:
         """Enhance process result with adaptive intelligence"""
-        
+
         enhanced_result = original_result.copy() if original_result else {}
-        
+
         # Add adaptive feedback section based on user's detail preference
         user_preferences = self.get_memory(client_id).get_relevant_memory(process_num, business_function).get('user_preferences', {})
         detail_level = user_preferences.get('response_detail_level', 'standard')

@@ -2832,7 +2832,7 @@ def register_tools(mcp):
                 resource_allocation["priority_ranking"].append({
                     "rank": i + 1,
                     "segment": seg.segment_name,
-                    "priority_score": round((s.total_arr * (seg.avg_health_score / 100)) / 1000, 2),
+                    "priority_score": round((seg.total_arr * (seg.avg_health_score / 100)) / 1000, 2),
                     "rationale": f"Represents {arr_percentage:.1f}% of ARR with {seg.avg_health_score:.0f} health score"
                 })
 
@@ -3505,6 +3505,9 @@ def register_tools(mcp):
                 total_customers=total_customers,
                 distribution=stage_distribution
             )
+
+            # Calculate pattern reliability factor based on data sample size
+            pattern_reliability_factor = min(1.0, total_customers / 100)
 
             # Stage characteristics and metrics
             stage_characteristics = {}
