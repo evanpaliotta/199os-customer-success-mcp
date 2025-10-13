@@ -1,0 +1,129 @@
+# Prometheus Configuration for Customer Success MCP
+# Scrapes metrics from the MCP server and external integrations
+
+global:
+  scrape_interval: 15s      # Scrape targets every 15 seconds
+  evaluation_interval: 15s  # Evaluate rules every 15 seconds
+  scrape_timeout: 10s       # Timeout for scrapes
+
+  # Attach these labels to any time series or alerts when communicating with
+  # external systems (federation, remote storage, Alertmanager)
+  external_labels:
+    cluster: 'customer-success-mcp'
+    environment: 'production'  # Change to 'staging' or 'development' as needed
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - 'alertmanager:9093'
+
+# Load rules from files
+rule_files:
+  - 'alerts.yml'
+  - 'recording_rules.yml'
+
+# Scrape configurations
+scrape_configs:
+  # ============================================================================
+  # MCP Server Metrics
+  # ============================================================================
+  - job_name: 'mcp-server'
+    static_configs:
+      - targets:
+          - 'mcp-server:9090'  # MCP server Prometheus metrics endpoint
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  # ============================================================================
+  # PostgreSQL Database Metrics
+  # ============================================================================
+  - job_name: 'postgresql'
+    static_configs:
+      - targets:
+          - 'postgres-exporter:9187'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'cs-mcp-database'
+
+  # ============================================================================
+  # Redis Cache Metrics
+  # ============================================================================
+  - job_name: 'redis'
+    static_configs:
+      - targets:
+          - 'redis-exporter:9121'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'cs-mcp-redis'
+
+  # ============================================================================
+  # Node Exporter (System Metrics)
+  # ============================================================================
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets:
+          - 'node-exporter:9100'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+
+  # ============================================================================
+  # cAdvisor (Container Metrics)
+  # ============================================================================
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets:
+          - 'cadvisor:8080'
+    metrics_path: '/metrics'
+
+  # ============================================================================
+  # Blackbox Exporter (External Endpoint Monitoring)
+  # ============================================================================
+  - job_name: 'blackbox-http'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - https://api.zendesk.com/api/v2/tickets.json
+          - https://api.intercom.io/health
+          - https://api.mixpanel.com/health
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # ============================================================================
+  # Prometheus Self-Monitoring
+  # ============================================================================
+  - job_name: 'prometheus'
+    static_configs:
+      - targets:
+          - 'localhost:9090'
+
+  # ============================================================================
+  # Alertmanager Self-Monitoring
+  # ============================================================================
+  - job_name: 'alertmanager'
+    static_configs:
+      - targets:
+          - 'alertmanager:9093'
+
+# Remote write configuration (optional - for long-term storage)
+# remote_write:
+#   - url: "https://your-remote-storage/api/v1/write"
+#     basic_auth:
+#       username: "your-username"
+#       password: "your-password"
+
+# Remote read configuration (optional)
+# remote_read:
+#   - url: "https://your-remote-storage/api/v1/read"

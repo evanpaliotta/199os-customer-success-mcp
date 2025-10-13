@@ -1,0 +1,309 @@
+# Prometheus Alert Rules for Customer Success MCP
+# Defines when to trigger alerts based on metric thresholds
+
+groups:
+  # ============================================================================
+  # Service Availability Alerts
+  # ============================================================================
+  - name: availability
+    interval: 30s
+    rules:
+      - alert: MCPServerDown
+        expr: up{job="mcp-server"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: mcp-server
+        annotations:
+          summary: "MCP Server is down"
+          description: "MCP Server has been down for more than 1 minute."
+
+      - alert: DatabaseDown
+        expr: up{job="postgresql"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "PostgreSQL database is down"
+          description: "PostgreSQL has been unreachable for more than 1 minute."
+
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 2m
+        labels:
+          severity: high
+          component: redis
+        annotations:
+          summary: "Redis cache is down"
+          description: "Redis has been unreachable for more than 2 minutes."
+
+  # ============================================================================
+  # Performance Alerts
+  # ============================================================================
+  - name: performance
+    interval: 30s
+    rules:
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2.0
+        for: 5m
+        labels:
+          severity: warning
+          component: mcp-server
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time is {{ $value }}s (threshold: 2s)"
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.01
+        for: 5m
+        labels:
+          severity: high
+          component: mcp-server
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 1%)"
+
+      - alert: DatabaseSlowQueries
+        expr: rate(pg_stat_database_tup_fetched[5m]) / rate(pg_stat_database_tup_returned[5m]) < 0.8
+        for: 10m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Database queries are slow"
+          description: "Query efficiency is {{ $value | humanizePercentage }}"
+
+  # ============================================================================
+  # Resource Utilization Alerts
+  # ============================================================================
+  - name: resources
+    interval: 1m
+    rules:
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 10m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is {{ $value }}% on {{ $labels.instance }}"
+
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value }}% on {{ $labels.instance }}"
+
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 15
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "Low disk space"
+          description: "Disk space is {{ $value }}% available on {{ $labels.instance }}"
+
+      - alert: DiskSpaceCritical
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 5
+        for: 1m
+        labels:
+          severity: critical
+          component: system
+        annotations:
+          summary: "Critical disk space"
+          description: "Only {{ $value }}% disk space available on {{ $labels.instance }}"
+
+  # ============================================================================
+  # Database Alerts
+  # ============================================================================
+  - name: database
+    interval: 30s
+    rules:
+      - alert: DatabaseConnectionPoolExhausted
+        expr: pg_stat_database_numbackends / pg_settings_max_connections * 100 > 90
+        for: 5m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "{{ $value }}% of database connections in use"
+
+      - alert: DatabaseHighConnections
+        expr: pg_stat_database_numbackends > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "High number of database connections"
+          description: "{{ $value }} active database connections"
+
+      - alert: DatabaseDeadlocks
+        expr: rate(pg_stat_database_deadlocks[5m]) > 0
+        for: 1m
+        labels:
+          severity: high
+          component: database
+        annotations:
+          summary: "Database deadlocks detected"
+          description: "{{ $value }} deadlocks per second"
+
+      - alert: DatabaseReplicationLag
+        expr: pg_replication_lag > 30
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Database replication lag"
+          description: "Replication lag is {{ $value }} seconds"
+
+  # ============================================================================
+  # Redis Alerts
+  # ============================================================================
+  - name: redis
+    interval: 30s
+    rules:
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          component: redis
+        annotations:
+          summary: "Redis memory usage high"
+          description: "Redis is using {{ $value }}% of allocated memory"
+
+      - alert: RedisHighConnectionCount
+        expr: redis_connected_clients > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: redis
+        annotations:
+          summary: "High number of Redis connections"
+          description: "{{ $value }} Redis connections active"
+
+      - alert: RedisEvictedKeys
+        expr: rate(redis_evicted_keys_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: redis
+        annotations:
+          summary: "Redis evicting keys"
+          description: "{{ $value }} keys/sec being evicted due to memory pressure"
+
+  # ============================================================================
+  # Rate Limiting Alerts
+  # ============================================================================
+  - name: rate_limiting
+    interval: 30s
+    rules:
+      - alert: HighRateLimitRejectionRate
+        expr: rate(rate_limit_rejections_total[5m]) / rate(rate_limit_checks_total[5m]) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+          component: rate-limiter
+        annotations:
+          summary: "High rate limit rejection rate"
+          description: "{{ $value | humanizePercentage }} of requests being rate limited"
+
+      - alert: RateLimitThresholdApproaching
+        expr: rate(rate_limit_checks_total{client_id!=""}[5m]) > 80
+        for: 5m
+        labels:
+          severity: info
+          component: rate-limiter
+        annotations:
+          summary: "Client approaching rate limit"
+          description: "Client {{ $labels.client_id }} at {{ $value }} req/min"
+
+  # ============================================================================
+  # Integration Health Alerts
+  # ============================================================================
+  - name: integrations
+    interval: 1m
+    rules:
+      - alert: IntegrationDown
+        expr: probe_success{job="blackbox-http"} == 0
+        for: 5m
+        labels:
+          severity: high
+          component: integration
+        annotations:
+          summary: "External integration unreachable"
+          description: "{{ $labels.instance }} has been unreachable for 5 minutes"
+          integration_name: "{{ $labels.instance }}"
+
+      - alert: IntegrationHighLatency
+        expr: probe_duration_seconds{job="blackbox-http"} > 5
+        for: 10m
+        labels:
+          severity: warning
+          component: integration
+        annotations:
+          summary: "High latency to external integration"
+          description: "{{ $labels.instance }} latency is {{ $value }}s"
+          integration_name: "{{ $labels.instance }}"
+
+  # ============================================================================
+  # Security Alerts
+  # ============================================================================
+  - name: security
+    interval: 1m
+    rules:
+      - alert: UnauthorizedAccessAttempts
+        expr: rate(http_requests_total{status="401"}[5m]) > 10
+        for: 5m
+        labels:
+          severity: high
+          component: security
+        annotations:
+          summary: "High rate of unauthorized access attempts"
+          description: "{{ $value }} 401 errors per second detected"
+
+      - alert: SuspiciousActivity
+        expr: rate(http_requests_total{status="403"}[5m]) > 5
+        for: 5m
+        labels:
+          severity: high
+          component: security
+        annotations:
+          summary: "Suspicious activity detected"
+          description: "{{ $value }} 403 Forbidden errors per second"
+
+  # ============================================================================
+  # Health Check Alerts
+  # ============================================================================
+  - name: health_checks
+    interval: 30s
+    rules:
+      - alert: HealthCheckFailing
+        expr: health_check_status{check_type="readiness"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: health-check
+        annotations:
+          summary: "Health check failing"
+          description: "Readiness check has been failing for 2 minutes"
+
+      - alert: HealthCheckDegraded
+        expr: health_check_response_time_ms > 1000
+        for: 5m
+        labels:
+          severity: warning
+          component: health-check
+        annotations:
+          summary: "Health check response time degraded"
+          description: "Health check taking {{ $value }}ms (threshold: 1000ms)"

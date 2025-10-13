@@ -1,0 +1,164 @@
+# Alertmanager Configuration for Customer Success MCP
+# Handles alert routing, grouping, and notification
+
+global:
+  # Time to wait before sending a notification about new alerts
+  resolve_timeout: 5m
+
+  # SMTP configuration for email alerts
+  smtp_smarthost: 'smtp.yourcompany.com:587'
+  smtp_from: 'alerts@yourcompany.com'
+  smtp_auth_username: 'alerts@yourcompany.com'
+  smtp_auth_password: 'CHANGE_ME_smtp_password'
+  smtp_require_tls: true
+
+# Templates for alert notifications
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Root route - all alerts flow through here
+route:
+  # Group alerts by these labels
+  group_by: ['alertname', 'cluster', 'service']
+
+  # How long to wait before sending initial notification
+  group_wait: 10s
+
+  # How long to wait before sending a notification about new alerts
+  # added to a group of alerts for which an initial notification was sent
+  group_interval: 10s
+
+  # How long to wait before sending a notification again
+  repeat_interval: 12h
+
+  # Default receiver
+  receiver: 'team-ops'
+
+  # Child routes (more specific routing)
+  routes:
+    # Critical database alerts
+    - match:
+        severity: critical
+        component: database
+      receiver: 'team-ops-pagerduty'
+      group_wait: 0s
+      repeat_interval: 5m
+
+    # Critical security alerts
+    - match:
+        severity: critical
+        component: security
+      receiver: 'team-security-urgent'
+      group_wait: 0s
+      repeat_interval: 5m
+
+    # High severity alerts
+    - match:
+        severity: high
+      receiver: 'team-ops-slack'
+      repeat_interval: 1h
+
+    # Integration failures
+    - match:
+        component: integration
+      receiver: 'team-integrations'
+      group_by: ['integration_name']
+      repeat_interval: 4h
+
+    # Rate limit alerts
+    - match:
+        alertname: 'HighRateLimitRejectionRate'
+      receiver: 'team-ops-slack'
+      repeat_interval: 30m
+
+    # Warning alerts
+    - match:
+        severity: warning
+      receiver: 'team-ops-slack'
+      repeat_interval: 24h
+
+# Inhibition rules (prevent alert spam)
+inhibit_rules:
+  # Inhibit warning if critical alert is firing
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'instance']
+
+  # Inhibit database connection errors if database is down
+  - source_match:
+      alertname: 'DatabaseDown'
+    target_match:
+      component: 'database'
+    equal: ['instance']
+
+# Receivers (notification endpoints)
+receivers:
+  # Primary ops team - email + Slack
+  - name: 'team-ops'
+    email_configs:
+      - to: 'ops-team@yourcompany.com'
+        headers:
+          Subject: '[MCP Alert] {{ .GroupLabels.alertname }}'
+        html: '{{ template "email.default.html" . }}'
+
+    slack_configs:
+      - api_url: 'CHANGE_ME_slack_webhook_url'
+        channel: '#mcp-alerts'
+        title: '{{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}\n{{ end }}'
+        color: '{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}'
+
+  # Critical alerts - PagerDuty
+  - name: 'team-ops-pagerduty'
+    pagerduty_configs:
+      - service_key: 'CHANGE_ME_pagerduty_service_key'
+        description: '{{ .GroupLabels.alertname }}: {{ .CommonAnnotations.summary }}'
+        severity: '{{ .CommonLabels.severity }}'
+
+    email_configs:
+      - to: 'ops-oncall@yourcompany.com'
+        headers:
+          Subject: '[CRITICAL MCP Alert] {{ .GroupLabels.alertname }}'
+          Priority: 'urgent'
+
+  # Security team - urgent
+  - name: 'team-security-urgent'
+    email_configs:
+      - to: 'security@yourcompany.com'
+        headers:
+          Subject: '[SECURITY ALERT] {{ .GroupLabels.alertname }}'
+          Priority: 'urgent'
+
+    slack_configs:
+      - api_url: 'CHANGE_ME_security_slack_webhook'
+        channel: '#security-alerts'
+        title: '🚨 SECURITY ALERT: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}\n{{ end }}'
+        color: 'danger'
+
+  # Ops team - Slack only
+  - name: 'team-ops-slack'
+    slack_configs:
+      - api_url: 'CHANGE_ME_slack_webhook_url'
+        channel: '#mcp-alerts'
+        title: '{{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}\n{{ end }}'
+        color: '{{ if eq .Status "firing" }}warning{{ else }}good{{ end }}'
+
+  # Integrations team
+  - name: 'team-integrations'
+    email_configs:
+      - to: 'integrations-team@yourcompany.com'
+        headers:
+          Subject: '[MCP Integration Alert] {{ .GroupLabels.integration_name }}'
+
+    slack_configs:
+      - api_url: 'CHANGE_ME_slack_webhook_url'
+        channel: '#integrations'
+        title: 'Integration Alert: {{ .GroupLabels.integration_name }}'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}\n{{ end }}'
+
+  # Null receiver (for silenced alerts)
+  - name: 'null'
