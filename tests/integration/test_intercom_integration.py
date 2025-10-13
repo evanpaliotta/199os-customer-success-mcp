@@ -10,13 +10,32 @@ from datetime import datetime
 import time
 
 from src.integrations.intercom_client import IntercomClient, CircuitBreaker
-from intercom.errors import (
-    AuthenticationError,
-    ResourceNotFound,
-    RateLimitExceeded,
-    ServerError,
-    ServiceUnavailableError
-)
+
+# Import Intercom errors with fallback for different library versions
+try:
+    from intercom.errors import (
+        AuthenticationError,
+        ResourceNotFound,
+        RateLimitExceeded,
+        ServerError,
+        ServiceUnavailableError
+    )
+except ImportError:
+    # Create mock error classes if imports fail (for testing compatibility)
+    class AuthenticationError(Exception):
+        pass
+
+    class ResourceNotFound(Exception):
+        pass
+
+    class RateLimitExceeded(Exception):
+        pass
+
+    class ServerError(Exception):
+        pass
+
+    class ServiceUnavailableError(Exception):
+        pass
 
 
 # ============================================================================
