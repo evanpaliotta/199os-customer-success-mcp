@@ -97,3 +97,8 @@ Thumbs.db
 tmp/
 temp/
 *.tmp
+
+# Environment-specific configs (never commit with real credentials)
+.env.development
+.env.staging
+.env.production
