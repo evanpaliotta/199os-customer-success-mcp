@@ -2356,7 +2356,7 @@ def register_tools(mcp):
                 ))
 
             # Generate churn prediction
-            churn_probability = min(0.95, max(0.05, (100 - current_health_score) / 100 + mock.random_float(-0.15, 0.10)))
+            churn_probability = min(0.95, max(0.05, (100 - current_health_score) / 100 + 0.0))
 
             if churn_probability < 0.25:
                 churn_risk_level = "low"
@@ -2371,7 +2371,7 @@ def register_tools(mcp):
                 client_id=client_id,
                 churn_probability=churn_probability,
                 churn_risk_level=churn_risk_level,
-                confidence_score=mock.random_float(0.75, 0.95),
+                confidence_score=0.85,
                 contributing_factors=[
                     {"factor": "usage_decline", "weight": 0.35},
                     {"factor": "engagement_decrease", "weight": 0.28},
@@ -2379,7 +2379,7 @@ def register_tools(mcp):
                     {"factor": "satisfaction_decline", "weight": 0.17}
                 ],
                 risk_indicators=risk_indicators,
-                predicted_churn_date=(datetime.now() + timedelta(days=mock.random_int(60, 180))).date() if churn_probability > 0.50 else None,
+                predicted_churn_date=(datetime.now() + timedelta(days=120)).date() if churn_probability > 0.50 else None,
                 retention_recommendations=[
                     "Increase CSM touchpoint frequency to weekly" if churn_probability > 0.60 else "Maintain regular CSM cadence",
                     "Address top support issues immediately" if support_score < 80 else "Continue proactive support",
@@ -2401,12 +2401,12 @@ def register_tools(mcp):
                     else:
                         predicted_change = 0
 
-                    predicted_score = max(0, min(100, current_health_score + predicted_change + mock.random_int(-2, 2)))
+                    predicted_score = max(0, min(100, current_health_score + predicted_change + 0))
 
                     predicted_scores.append({
                         "date": prediction_date.strftime("%Y-%m-%d"),
                         "predicted_score": int(predicted_score),
-                        "confidence": mock.random_float(0.70, 0.90) - (weeks_ahead * 0.03),
+                        "confidence": 0.80 - (weeks_ahead * 0.03),
                         "scenario": "baseline"
                     })
 
@@ -2841,14 +2841,14 @@ def register_tools(mcp):
                 "migration_patterns": [
                     {
                         "from_segment": seg.segment_name,
-                        "to_segment": mock.random_choice([s.segment_name for s in segments if s.segment_id != seg.segment_id]),
-                        "migration_rate": mock.random_float(0.05, 0.20),
+                        "to_segment": segments[(segments.index(seg) + 1) % len(segments)].segment_name if len(segments) > 1 else seg.segment_name,
+                        "migration_rate": 0.12,
                         "common_triggers": ["contract_expansion", "usage_increase", "feature_adoption"]
                     }
                     for seg in segments[:min(3, len(segments))]
                 ],
-                "upgrade_opportunities": mock.random_int(5, 20),
-                "downgrade_risks": mock.random_int(2, 10),
+                "upgrade_opportunities": 12,
+                "downgrade_risks": 6,
                 "migration_velocity": "moderate"
             }
 
