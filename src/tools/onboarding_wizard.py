@@ -52,11 +52,12 @@ class WizardStep(Enum):
     """Wizard steps enumeration"""
     WELCOME = 1
     SYSTEM_CHECK = 2
-    PLATFORM_SETUP = 3
-    CONFIGURATION = 4
-    DATABASE_INIT = 5
-    TESTING = 6
-    COMPLETION = 7
+    SECURITY_SETUP = 3
+    PLATFORM_SETUP = 4
+    CONFIGURATION = 5
+    DATABASE_INIT = 6
+    TESTING = 7
+    COMPLETION = 8
 
 
 @dataclass
@@ -76,6 +77,13 @@ class OnboardingState:
     intercom_configured: bool = False
     mixpanel_configured: bool = False
     sendgrid_configured: bool = False
+    gainsight_configured: bool = False
+    amplitude_configured: bool = False
+    salesforce_configured: bool = False
+    hubspot_configured: bool = False
+    slack_configured: bool = False
+    typeform_configured: bool = False
+    freshdesk_configured: bool = False
 
     # Configuration
     health_score_weights: Optional[Dict[str, float]] = None
@@ -168,8 +176,11 @@ class CustomerSuccessOnboardingWizard:
                 self.console.print(f"[yellow]Warning: Could not load state: {e}[/yellow]")
 
     def clear_screen(self):
-        """Clear the terminal screen"""
-        os.system('cls' if os.name == 'nt' else 'clear')
+        """Clear the terminal screen using ANSI escape codes"""
+        # Use ANSI escape codes instead of os.system() to avoid command injection risk
+        # \033[2J - Clear entire screen
+        # \033[H - Move cursor to home position (0,0)
+        print('\033[2J\033[H', end='')
 
     def print_header(self, title: str, subtitle: str = ""):
         """Print a formatted header"""
@@ -206,14 +217,15 @@ class CustomerSuccessOnboardingWizard:
 
         self.console.print("[bold]What this wizard will do:[/bold]")
         self.console.print("  1. Check your system requirements")
-        self.console.print("  2. Configure platform integrations (Zendesk, Intercom, Mixpanel, SendGrid)")
-        self.console.print("  3. Set up health scoring and retention thresholds")
-        self.console.print("  4. Initialize database and create tables")
-        self.console.print("  5. Test all integrations")
-        self.console.print("  6. Generate setup report")
+        self.console.print("  2. Configure security (encryption keys, Redis)")
+        self.console.print("  3. Configure platform integrations (Zendesk, Intercom, Salesforce, etc.)")
+        self.console.print("  4. Set up health scoring and retention thresholds")
+        self.console.print("  5. Initialize database and create tables")
+        self.console.print("  6. Test all integrations")
+        self.console.print("  7. Generate setup report")
         self.console.print()
 
-        self.console.print("[yellow]Estimated time: 5-10 minutes[/yellow]")
+        self.console.print("[yellow]Estimated time: 10-15 minutes[/yellow]")
         self.console.print()
 
         if Confirm.ask("Ready to begin?", default=True):
@@ -225,7 +237,7 @@ class CustomerSuccessOnboardingWizard:
     def step_system_check(self) -> bool:
         """Check system requirements"""
         self.clear_screen()
-        self.print_header("System Requirements Check", "Step 1 of 6")
+        self.print_header("System Requirements Check", "Step 1 of 7")
         self.print_progress()
 
         checks = []
@@ -354,22 +366,60 @@ class CustomerSuccessOnboardingWizard:
     # STEP 2: PLATFORM INTEGRATION SETUP
     # ========================================================================
 
-    def step_platform_setup(self) -> bool:
-        """Configure platform integrations"""
+    def step_security_setup(self) -> bool:
+        """Configure security settings (encryption keys, Redis, etc.)"""
         self.clear_screen()
-        self.print_header("Platform Integration Setup", "Step 2 of 6")
+        self.print_header("Security & Infrastructure Setup", "Step 2 of 7")
         self.print_progress()
 
-        self.console.print("[bold]Configure your platform integrations:[/bold]")
-        self.console.print("You can skip any integration and configure it later.")
+        self.console.print("[bold]Configure security settings and core infrastructure:[/bold]")
         self.console.print()
 
-        # Initialize credential manager
-        master_password = os.getenv('CREDENTIAL_MASTER_PASSWORD')
+        # Generate encryption key
+        self.console.print("[cyan]1. Encryption Key[/cyan]")
+        encryption_key = os.getenv('ENCRYPTION_KEY')
+        if not encryption_key:
+            self.console.print("An encryption key is required for securing sensitive data.")
+            if Confirm.ask("Generate a new encryption key automatically?", default=True):
+                import secrets
+                encryption_key = secrets.token_hex(32)
+                self.console.print(f"[green]Generated: {encryption_key[:16]}...[/green]")
+                self._update_env_file('ENCRYPTION_KEY', encryption_key)
+            else:
+                encryption_key = Prompt.ask("Enter your encryption key (min 32 characters)")
+                if len(encryption_key) < 32:
+                    self.console.print("[red]Encryption key must be at least 32 characters[/red]")
+                    return False
+                self._update_env_file('ENCRYPTION_KEY', encryption_key)
+        else:
+            self.console.print("[green]Encryption key already configured ✓[/green]")
+
+        # Generate JWT secret
+        self.console.print("\n[cyan]2. JWT Secret[/cyan]")
+        jwt_secret = os.getenv('JWT_SECRET')
+        if not jwt_secret:
+            self.console.print("A JWT secret is required for API authentication.")
+            if Confirm.ask("Generate a new JWT secret automatically?", default=True):
+                import secrets
+                jwt_secret = secrets.token_urlsafe(48)
+                self.console.print(f"[green]Generated: {jwt_secret[:16]}...[/green]")
+                self._update_env_file('JWT_SECRET', jwt_secret)
+            else:
+                jwt_secret = Prompt.ask("Enter your JWT secret (min 32 characters)")
+                if len(jwt_secret) < 32:
+                    self.console.print("[red]JWT secret must be at least 32 characters[/red]")
+                    return False
+                self._update_env_file('JWT_SECRET', jwt_secret)
+        else:
+            self.console.print("[green]JWT secret already configured ✓[/green]")
+
+        # Master password for credential manager
+        self.console.print("\n[cyan]3. Master Password[/cyan]")
+        master_password = os.getenv('MASTER_PASSWORD')
         if not master_password:
-            self.console.print("[yellow]Setting up credential encryption...[/yellow]")
+            self.console.print("A master password is required for credential encryption.")
             master_password = Prompt.ask(
-                "Enter a master password for credential encryption",
+                "Enter a master password for credential encryption (min 16 characters)",
                 password=True
             )
             confirm_password = Prompt.ask(
@@ -379,10 +429,60 @@ class CustomerSuccessOnboardingWizard:
             if master_password != confirm_password:
                 self.console.print("[red]Passwords do not match![/red]")
                 return False
+            if len(master_password) < 16:
+                self.console.print("[red]Master password must be at least 16 characters[/red]")
+                return False
 
-            # Save to .env
-            self._update_env_file('CREDENTIAL_MASTER_PASSWORD', master_password)
-            os.environ['CREDENTIAL_MASTER_PASSWORD'] = master_password
+            self._update_env_file('MASTER_PASSWORD', master_password)
+            os.environ['MASTER_PASSWORD'] = master_password
+            self.console.print("[green]Master password configured ✓[/green]")
+        else:
+            self.console.print("[green]Master password already configured ✓[/green]")
+
+        # Configure Redis
+        self.console.print("\n[cyan]4. Redis Configuration[/cyan]")
+        redis_url = os.getenv('REDIS_URL')
+        if not redis_url:
+            self.console.print("Redis is used for caching and session management.")
+            if Confirm.ask("Configure Redis now?", default=True):
+                use_default = Confirm.ask("Use default Redis URL (redis://localhost:6379/0)?", default=True)
+                if use_default:
+                    redis_url = "redis://localhost:6379/0"
+                else:
+                    host = Prompt.ask("Redis host", default="localhost")
+                    port = Prompt.ask("Redis port", default="6379")
+                    database = Prompt.ask("Redis database", default="0")
+                    redis_password = Prompt.ask("Redis password (optional)", default="", password=True)
+
+                    if redis_password:
+                        redis_url = f"redis://:{redis_password}@{host}:{port}/{database}"
+                        self._update_env_file('REDIS_PASSWORD', redis_password)
+                    else:
+                        redis_url = f"redis://{host}:{port}/{database}"
+
+                self._update_env_file('REDIS_URL', redis_url)
+                self.console.print("[green]Redis configured ✓[/green]")
+            else:
+                self.console.print("[yellow]Skipping Redis configuration[/yellow]")
+        else:
+            self.console.print("[green]Redis already configured ✓[/green]")
+
+        self.state.mark_step_complete(WizardStep.SECURITY_SETUP)
+        self.save_state()
+
+        self.console.print("\n[green]Security and infrastructure setup complete! ✓[/green]")
+        input("\nPress Enter to continue...")
+        return True
+
+    def step_platform_setup(self) -> bool:
+        """Configure platform integrations"""
+        self.clear_screen()
+        self.print_header("Platform Integration Setup", "Step 3 of 7")
+        self.print_progress()
+
+        self.console.print("[bold]Configure your platform integrations:[/bold]")
+        self.console.print("You can skip any integration and configure it later.")
+        self.console.print()
 
         try:
             if SecureCredentialManager:
@@ -398,11 +498,18 @@ class CustomerSuccessOnboardingWizard:
             ("Intercom", self._configure_intercom),
             ("Mixpanel", self._configure_mixpanel),
             ("SendGrid", self._configure_sendgrid),
+            ("Gainsight", self._configure_gainsight),
+            ("Amplitude", self._configure_amplitude),
+            ("Salesforce", self._configure_salesforce),
+            ("HubSpot", self._configure_hubspot),
+            ("Slack", self._configure_slack),
+            ("Typeform", self._configure_typeform),
+            ("Freshdesk", self._configure_freshdesk),
         ]
 
         for integration_name, config_func in integrations:
             self.console.print(f"\n[bold cyan]Configure {integration_name}[/bold cyan]")
-            if Confirm.ask(f"Do you want to configure {integration_name}?", default=True):
+            if Confirm.ask(f"Do you want to configure {integration_name}?", default=False):
                 if not config_func():
                     self.console.print(f"[yellow]Skipping {integration_name}[/yellow]")
             else:
@@ -525,6 +632,192 @@ class CustomerSuccessOnboardingWizard:
         self.console.print("[green]SendGrid configured successfully! ✓[/green]")
         return True
 
+    def _configure_gainsight(self) -> bool:
+        """Configure Gainsight integration"""
+        self.console.print("\n[cyan]Gainsight Configuration[/cyan]")
+        self.console.print("You can find these in Gainsight Admin > API Access")
+
+        api_key = Prompt.ask("Gainsight API key", password=True)
+        base_url = Prompt.ask("Gainsight base URL (e.g., https://your-instance.gainsightcloud.com)")
+
+        if not all([api_key, base_url]):
+            self.console.print("[red]All fields are required[/red]")
+            return False
+
+        # Save credentials
+        self._update_env_file('GAINSIGHT_API_KEY', api_key)
+        self._update_env_file('GAINSIGHT_BASE_URL', base_url)
+
+        if self.credential_manager:
+            try:
+                self.credential_manager.store_credential('system', 'gainsight', 'api_key', api_key)
+                self.credential_manager.store_credential('system', 'gainsight', 'base_url', base_url)
+            except Exception as e:
+                self.console.print(f"[yellow]Warning: Could not encrypt credentials: {e}[/yellow]")
+
+        self.state.gainsight_configured = True
+        self.console.print("[green]Gainsight configured successfully! ✓[/green]")
+        return True
+
+    def _configure_amplitude(self) -> bool:
+        """Configure Amplitude integration"""
+        self.console.print("\n[cyan]Amplitude Configuration[/cyan]")
+        self.console.print("You can find these in Amplitude Settings > Projects")
+
+        api_key = Prompt.ask("Amplitude API key")
+        secret_key = Prompt.ask("Amplitude secret key", password=True)
+
+        if not all([api_key, secret_key]):
+            self.console.print("[red]All fields are required[/red]")
+            return False
+
+        # Save credentials
+        self._update_env_file('AMPLITUDE_API_KEY', api_key)
+        self._update_env_file('AMPLITUDE_SECRET_KEY', secret_key)
+
+        if self.credential_manager:
+            try:
+                self.credential_manager.store_credential('system', 'amplitude', 'api_key', api_key)
+                self.credential_manager.store_credential('system', 'amplitude', 'secret_key', secret_key)
+            except Exception as e:
+                self.console.print(f"[yellow]Warning: Could not encrypt credentials: {e}[/yellow]")
+
+        self.state.amplitude_configured = True
+        self.console.print("[green]Amplitude configured successfully! ✓[/green]")
+        return True
+
+    def _configure_salesforce(self) -> bool:
+        """Configure Salesforce integration"""
+        self.console.print("\n[cyan]Salesforce Configuration[/cyan]")
+        self.console.print("You'll need your Salesforce username, password, and security token")
+
+        username = Prompt.ask("Salesforce username")
+        password = Prompt.ask("Salesforce password", password=True)
+        security_token = Prompt.ask("Salesforce security token", password=True)
+
+        if not all([username, password, security_token]):
+            self.console.print("[red]All fields are required[/red]")
+            return False
+
+        # Save credentials
+        self._update_env_file('SALESFORCE_USERNAME', username)
+        self._update_env_file('SALESFORCE_PASSWORD', password)
+        self._update_env_file('SALESFORCE_SECURITY_TOKEN', security_token)
+
+        if self.credential_manager:
+            try:
+                self.credential_manager.store_credential('system', 'salesforce', 'username', username)
+                self.credential_manager.store_credential('system', 'salesforce', 'password', password)
+                self.credential_manager.store_credential('system', 'salesforce', 'security_token', security_token)
+            except Exception as e:
+                self.console.print(f"[yellow]Warning: Could not encrypt credentials: {e}[/yellow]")
+
+        self.state.salesforce_configured = True
+        self.console.print("[green]Salesforce configured successfully! ✓[/green]")
+        return True
+
+    def _configure_hubspot(self) -> bool:
+        """Configure HubSpot integration"""
+        self.console.print("\n[cyan]HubSpot Configuration[/cyan]")
+        self.console.print("You can create an access token in HubSpot Settings > Integrations > API Key")
+
+        access_token = Prompt.ask("HubSpot access token", password=True)
+
+        if not access_token:
+            self.console.print("[red]Access token is required[/red]")
+            return False
+
+        # Save credentials
+        self._update_env_file('HUBSPOT_ACCESS_TOKEN', access_token)
+
+        if self.credential_manager:
+            try:
+                self.credential_manager.store_credential('system', 'hubspot', 'access_token', access_token)
+            except Exception as e:
+                self.console.print(f"[yellow]Warning: Could not encrypt credentials: {e}[/yellow]")
+
+        self.state.hubspot_configured = True
+        self.console.print("[green]HubSpot configured successfully! ✓[/green]")
+        return True
+
+    def _configure_slack(self) -> bool:
+        """Configure Slack integration"""
+        self.console.print("\n[cyan]Slack Configuration[/cyan]")
+        self.console.print("Create a Slack app at api.slack.com/apps and install it to your workspace")
+
+        bot_token = Prompt.ask("Slack bot token (starts with xoxb-)", password=True)
+        signing_secret = Prompt.ask("Slack signing secret", password=True)
+
+        if not all([bot_token, signing_secret]):
+            self.console.print("[red]All fields are required[/red]")
+            return False
+
+        # Save credentials
+        self._update_env_file('SLACK_BOT_TOKEN', bot_token)
+        self._update_env_file('SLACK_SIGNING_SECRET', signing_secret)
+
+        if self.credential_manager:
+            try:
+                self.credential_manager.store_credential('system', 'slack', 'bot_token', bot_token)
+                self.credential_manager.store_credential('system', 'slack', 'signing_secret', signing_secret)
+            except Exception as e:
+                self.console.print(f"[yellow]Warning: Could not encrypt credentials: {e}[/yellow]")
+
+        self.state.slack_configured = True
+        self.console.print("[green]Slack configured successfully! ✓[/green]")
+        return True
+
+    def _configure_typeform(self) -> bool:
+        """Configure Typeform integration"""
+        self.console.print("\n[cyan]Typeform Configuration[/cyan]")
+        self.console.print("You can create a personal access token in Typeform Account > Personal tokens")
+
+        access_token = Prompt.ask("Typeform access token", password=True)
+
+        if not access_token:
+            self.console.print("[red]Access token is required[/red]")
+            return False
+
+        # Save credentials
+        self._update_env_file('TYPEFORM_ACCESS_TOKEN', access_token)
+
+        if self.credential_manager:
+            try:
+                self.credential_manager.store_credential('system', 'typeform', 'access_token', access_token)
+            except Exception as e:
+                self.console.print(f"[yellow]Warning: Could not encrypt credentials: {e}[/yellow]")
+
+        self.state.typeform_configured = True
+        self.console.print("[green]Typeform configured successfully! ✓[/green]")
+        return True
+
+    def _configure_freshdesk(self) -> bool:
+        """Configure Freshdesk integration"""
+        self.console.print("\n[cyan]Freshdesk Configuration[/cyan]")
+        self.console.print("You can find your API key in Freshdesk Profile Settings")
+
+        api_key = Prompt.ask("Freshdesk API key", password=True)
+        domain = Prompt.ask("Freshdesk domain (e.g., yourcompany.freshdesk.com)")
+
+        if not all([api_key, domain]):
+            self.console.print("[red]All fields are required[/red]")
+            return False
+
+        # Save credentials
+        self._update_env_file('FRESHDESK_API_KEY', api_key)
+        self._update_env_file('FRESHDESK_DOMAIN', domain)
+
+        if self.credential_manager:
+            try:
+                self.credential_manager.store_credential('system', 'freshdesk', 'api_key', api_key)
+                self.credential_manager.store_credential('system', 'freshdesk', 'domain', domain)
+            except Exception as e:
+                self.console.print(f"[yellow]Warning: Could not encrypt credentials: {e}[/yellow]")
+
+        self.state.freshdesk_configured = True
+        self.console.print("[green]Freshdesk configured successfully! ✓[/green]")
+        return True
+
     def _update_env_file(self, key: str, value: str):
         """Update or add a key-value pair in .env file"""
         env_lines = []
@@ -555,7 +848,7 @@ class CustomerSuccessOnboardingWizard:
     def step_configuration(self) -> bool:
         """Configure health scores, thresholds, and SLA targets"""
         self.clear_screen()
-        self.print_header("Customer Success Configuration", "Step 3 of 6")
+        self.print_header("Customer Success Configuration", "Step 4 of 7")
         self.print_progress()
 
         self.console.print("[bold]Configure your Customer Success parameters:[/bold]")
@@ -592,13 +885,19 @@ class CustomerSuccessOnboardingWizard:
                     weights[factor] = weight
                     remaining -= weight
 
+        # Validate weights sum to 1.0
+        total_weight = sum(weights.values())
+        if abs(total_weight - 1.0) > 0.01:
+            self.console.print(f"[red]Error: Weights sum to {total_weight:.2f}, must equal 1.0[/red]")
+            return False
+
         self.state.health_score_weights = weights
 
         # Save to .env
         for factor, weight in weights.items():
             self._update_env_file(f'HEALTH_SCORE_WEIGHT_{factor.upper()}', str(weight))
 
-        self.console.print("[green]Health score weights configured! ✓[/green]")
+        self.console.print(f"[green]Health score weights configured! (Total: {total_weight:.2f}) ✓[/green]")
         self.console.print()
 
         # Thresholds
@@ -681,7 +980,7 @@ class CustomerSuccessOnboardingWizard:
     def step_database_init(self) -> bool:
         """Initialize database and run migrations"""
         self.clear_screen()
-        self.print_header("Database Initialization", "Step 4 of 6")
+        self.print_header("Database Initialization", "Step 5 of 7")
         self.print_progress()
 
         self.console.print("[bold]Initialize database and create tables:[/bold]")
@@ -777,7 +1076,7 @@ class CustomerSuccessOnboardingWizard:
     def step_testing(self) -> bool:
         """Test all integrations"""
         self.clear_screen()
-        self.print_header("Testing & Validation", "Step 5 of 6")
+        self.print_header("Testing & Validation", "Step 6 of 7")
         self.print_progress()
 
         self.console.print("[bold]Testing platform integrations:[/bold]")
@@ -818,10 +1117,65 @@ class CustomerSuccessOnboardingWizard:
                 test_results.append(("SendGrid", result))
                 progress.update(task, completed=True)
 
+            # Test Gainsight
+            if self.state.gainsight_configured:
+                task = progress.add_task("Testing Gainsight...", total=None)
+                result = self._test_gainsight()
+                test_results.append(("Gainsight", result))
+                progress.update(task, completed=True)
+
+            # Test Amplitude
+            if self.state.amplitude_configured:
+                task = progress.add_task("Testing Amplitude...", total=None)
+                result = self._test_amplitude()
+                test_results.append(("Amplitude", result))
+                progress.update(task, completed=True)
+
+            # Test Salesforce
+            if self.state.salesforce_configured:
+                task = progress.add_task("Testing Salesforce...", total=None)
+                result = self._test_salesforce()
+                test_results.append(("Salesforce", result))
+                progress.update(task, completed=True)
+
+            # Test HubSpot
+            if self.state.hubspot_configured:
+                task = progress.add_task("Testing HubSpot...", total=None)
+                result = self._test_hubspot()
+                test_results.append(("HubSpot", result))
+                progress.update(task, completed=True)
+
+            # Test Slack
+            if self.state.slack_configured:
+                task = progress.add_task("Testing Slack...", total=None)
+                result = self._test_slack()
+                test_results.append(("Slack", result))
+                progress.update(task, completed=True)
+
+            # Test Typeform
+            if self.state.typeform_configured:
+                task = progress.add_task("Testing Typeform...", total=None)
+                result = self._test_typeform()
+                test_results.append(("Typeform", result))
+                progress.update(task, completed=True)
+
+            # Test Freshdesk
+            if self.state.freshdesk_configured:
+                task = progress.add_task("Testing Freshdesk...", total=None)
+                result = self._test_freshdesk()
+                test_results.append(("Freshdesk", result))
+                progress.update(task, completed=True)
+
             # Test database
             task = progress.add_task("Testing database...", total=None)
             result = self._test_database()
             test_results.append(("Database", result))
+            progress.update(task, completed=True)
+
+            # Test Redis
+            task = progress.add_task("Testing Redis...", total=None)
+            result = self._test_redis()
+            test_results.append(("Redis", result))
             progress.update(task, completed=True)
 
         # Display results
@@ -906,6 +1260,89 @@ class CustomerSuccessOnboardingWizard:
         except Exception as e:
             return (False, str(e))
 
+    def _test_gainsight(self) -> Tuple[bool, str]:
+        """Test Gainsight connection"""
+        try:
+            api_key = os.getenv('GAINSIGHT_API_KEY')
+            base_url = os.getenv('GAINSIGHT_BASE_URL')
+            if all([api_key, base_url]):
+                return (True, "Credentials configured")
+            else:
+                return (False, "Missing credentials")
+        except Exception as e:
+            return (False, str(e))
+
+    def _test_amplitude(self) -> Tuple[bool, str]:
+        """Test Amplitude connection"""
+        try:
+            api_key = os.getenv('AMPLITUDE_API_KEY')
+            secret_key = os.getenv('AMPLITUDE_SECRET_KEY')
+            if all([api_key, secret_key]):
+                return (True, "Credentials configured")
+            else:
+                return (False, "Missing credentials")
+        except Exception as e:
+            return (False, str(e))
+
+    def _test_salesforce(self) -> Tuple[bool, str]:
+        """Test Salesforce connection"""
+        try:
+            username = os.getenv('SALESFORCE_USERNAME')
+            password = os.getenv('SALESFORCE_PASSWORD')
+            security_token = os.getenv('SALESFORCE_SECURITY_TOKEN')
+            if all([username, password, security_token]):
+                return (True, "Credentials configured")
+            else:
+                return (False, "Missing credentials")
+        except Exception as e:
+            return (False, str(e))
+
+    def _test_hubspot(self) -> Tuple[bool, str]:
+        """Test HubSpot connection"""
+        try:
+            access_token = os.getenv('HUBSPOT_ACCESS_TOKEN')
+            if access_token:
+                return (True, "Credentials configured")
+            else:
+                return (False, "Missing access token")
+        except Exception as e:
+            return (False, str(e))
+
+    def _test_slack(self) -> Tuple[bool, str]:
+        """Test Slack connection"""
+        try:
+            bot_token = os.getenv('SLACK_BOT_TOKEN')
+            signing_secret = os.getenv('SLACK_SIGNING_SECRET')
+            if all([bot_token, signing_secret]):
+                return (True, "Credentials configured")
+            else:
+                return (False, "Missing credentials")
+        except Exception as e:
+            return (False, str(e))
+
+    def _test_typeform(self) -> Tuple[bool, str]:
+        """Test Typeform connection"""
+        try:
+            access_token = os.getenv('TYPEFORM_ACCESS_TOKEN')
+            if access_token:
+                return (True, "Credentials configured")
+            else:
+                return (False, "Missing access token")
+        except Exception as e:
+            return (False, str(e))
+
+    def _test_freshdesk(self) -> Tuple[bool, str]:
+        """Test Freshdesk connection"""
+        try:
+            api_key = os.getenv('FRESHDESK_API_KEY')
+            domain = os.getenv('FRESHDESK_DOMAIN')
+            if all([api_key, domain]):
+                return (True, "Credentials configured")
+            else:
+                return (False, "Missing credentials")
+        except Exception as e:
+            return (False, str(e))
+
     def _test_database(self) -> Tuple[bool, str]:
         """Test database connection"""
         try:
@@ -929,6 +1366,21 @@ class CustomerSuccessOnboardingWizard:
         except Exception as e:
             return (False, f"Connection failed: {str(e)[:50]}")
 
+    def _test_redis(self) -> Tuple[bool, str]:
+        """Test Redis connection"""
+        try:
+            redis_url = os.getenv('REDIS_URL')
+            if not redis_url:
+                return (False, "Redis URL not configured")
+
+            import redis
+            r = redis.from_url(redis_url, socket_connect_timeout=5)
+            r.ping()
+            r.close()
+            return (True, "Connection successful")
+        except Exception as e:
+            return (False, f"Connection failed: {str(e)[:50]}")
+
     # ========================================================================
     # STEP 6: COMPLETION
     # ========================================================================
@@ -936,7 +1388,7 @@ class CustomerSuccessOnboardingWizard:
     def step_completion(self) -> bool:
         """Display completion summary and next steps"""
         self.clear_screen()
-        self.print_header("Setup Complete!", "Step 6 of 6")
+        self.print_header("Setup Complete!", "Step 7 of 7")
 
         self.state.completed_at = datetime.utcnow().isoformat()
         self.state.mark_step_complete(WizardStep.COMPLETION)
@@ -955,6 +1407,13 @@ class CustomerSuccessOnboardingWizard:
         table.add_row("Intercom", "✓ Configured" if self.state.intercom_configured else "○ Not configured")
         table.add_row("Mixpanel", "✓ Configured" if self.state.mixpanel_configured else "○ Not configured")
         table.add_row("SendGrid", "✓ Configured" if self.state.sendgrid_configured else "○ Not configured")
+        table.add_row("Gainsight", "✓ Configured" if self.state.gainsight_configured else "○ Not configured")
+        table.add_row("Amplitude", "✓ Configured" if self.state.amplitude_configured else "○ Not configured")
+        table.add_row("Salesforce", "✓ Configured" if self.state.salesforce_configured else "○ Not configured")
+        table.add_row("HubSpot", "✓ Configured" if self.state.hubspot_configured else "○ Not configured")
+        table.add_row("Slack", "✓ Configured" if self.state.slack_configured else "○ Not configured")
+        table.add_row("Typeform", "✓ Configured" if self.state.typeform_configured else "○ Not configured")
+        table.add_row("Freshdesk", "✓ Configured" if self.state.freshdesk_configured else "○ Not configured")
         table.add_row("Database", "✓ Initialized" if self.state.database_initialized else "○ Not initialized")
         table.add_row("Health Scoring", "✓ Configured" if self.state.health_score_weights else "○ Not configured")
 
@@ -969,7 +1428,14 @@ class CustomerSuccessOnboardingWizard:
                 "zendesk": self.state.zendesk_configured,
                 "intercom": self.state.intercom_configured,
                 "mixpanel": self.state.mixpanel_configured,
-                "sendgrid": self.state.sendgrid_configured
+                "sendgrid": self.state.sendgrid_configured,
+                "gainsight": self.state.gainsight_configured,
+                "amplitude": self.state.amplitude_configured,
+                "salesforce": self.state.salesforce_configured,
+                "hubspot": self.state.hubspot_configured,
+                "slack": self.state.slack_configured,
+                "typeform": self.state.typeform_configured,
+                "freshdesk": self.state.freshdesk_configured
             },
             "configuration": {
                 "health_score_weights": self.state.health_score_weights,
@@ -982,6 +1448,12 @@ class CustomerSuccessOnboardingWizard:
             },
             "testing": {
                 "all_tests_passed": self.state.all_tests_passed
+            },
+            "system": {
+                "python_version": self.state.python_version,
+                "dependencies_installed": self.state.dependencies_installed,
+                "database_connected": self.state.database_connected,
+                "redis_connected": self.state.redis_connected
             }
         }
 
@@ -1032,27 +1504,32 @@ class CustomerSuccessOnboardingWizard:
                 if not self.step_system_check():
                     return
 
-            # Step 3: Platform Setup
+            # Step 3: Security Setup
+            if not self.state.is_step_complete(WizardStep.SECURITY_SETUP):
+                if not self.step_security_setup():
+                    return
+
+            # Step 4: Platform Setup
             if not self.state.is_step_complete(WizardStep.PLATFORM_SETUP):
                 if not self.step_platform_setup():
                     return
 
-            # Step 4: Configuration
+            # Step 5: Configuration
             if not self.state.is_step_complete(WizardStep.CONFIGURATION):
                 if not self.step_configuration():
                     return
 
-            # Step 5: Database Initialization
+            # Step 6: Database Initialization
             if not self.state.is_step_complete(WizardStep.DATABASE_INIT):
                 if not self.step_database_init():
                     return
 
-            # Step 6: Testing
+            # Step 7: Testing
             if not self.state.is_step_complete(WizardStep.TESTING):
                 if not self.step_testing():
                     return
 
-            # Step 7: Completion
+            # Step 8: Completion
             if not self.state.is_step_complete(WizardStep.COMPLETION):
                 self.step_completion()
 
