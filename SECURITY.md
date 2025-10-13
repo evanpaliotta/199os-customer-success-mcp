@@ -116,7 +116,7 @@ Each platform integration uses its own authentication:
 
 #### Credentials Encryption
 - **Algorithm:** AES-256-CBC
-- **Key Derivation:** PBKDF2 with 100,000 iterations
+- **Key Derivation:** PBKDF2 with 600,000 iterations (OWASP 2023 recommendation)
 - **Implementation:** `src/security/credential_manager.py`
 - **Master Password:** Required for encryption/decryption
 
@@ -850,7 +850,7 @@ We maintain transparency about security incidents. All significant incidents wil
 | Purpose | Algorithm | Key Size | Notes |
 |---------|-----------|----------|-------|
 | Credential Encryption | AES-256-CBC | 256 bits | FIPS 140-2 compliant |
-| Key Derivation | PBKDF2-HMAC-SHA256 | N/A | 100,000 iterations |
+| Key Derivation | PBKDF2-HMAC-SHA256 | N/A | 600,000 iterations (OWASP 2023) |
 | Password Hashing | bcrypt | N/A | Cost factor 12 |
 | JWT Signing | HS256 | 256 bits | Minimum secret length 256 bits |
 | Webhook Signing | HMAC-SHA256 | 256 bits | RFC 2104 compliant |
