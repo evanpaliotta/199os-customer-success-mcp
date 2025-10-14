@@ -159,6 +159,18 @@ Customer Success MCP Server
 - **JWT Authentication:** Secure API access
 - **Webhook Verification:** HMAC signature validation
 
+### ⚠️ Security Notice: Environment Files
+
+**IMPORTANT:** Never commit environment files containing credentials to version control.
+
+The following files are in `.gitignore` and should NEVER be committed:
+- `.env` - Your actual credentials
+- `.env.development` - Development environment config
+- `.env.staging` - Staging environment config
+- `.env.production` - Production environment config
+
+Only `.env.example` (with placeholder values) should be committed to help users set up their environment.
+
 ---
 
 ## 📖 Documentation
