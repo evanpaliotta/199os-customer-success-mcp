@@ -1,0 +1,77 @@
+{
+  "autonomous": {
+    "enabled": true,
+    "global_interval_minutes": 30,
+    "notifications": {
+      "slack_webhook": "",
+      "slack_enabled": false,
+      "email_enabled": false,
+      "email_to": ""
+    }
+  },
+  "workers": {
+    "churn_risk_monitor": {
+      "enabled": true,
+      "interval_hours": 4,
+      "description": "Monitors customer health scores and churn risk",
+      "params": {
+        "health_score_threshold": 60,
+        "alert_on_critical": true
+      }
+    },
+    "usage_drop_alerts": {
+      "enabled": true,
+      "interval_hours": 6,
+      "description": "Detects sudden drops in product usage",
+      "params": {
+        "drop_threshold_percent": 30,
+        "check_window_days": 7
+      }
+    },
+    "onboarding_progress": {
+      "enabled": true,
+      "interval_hours": 24,
+      "description": "Tracks customer onboarding completion",
+      "params": {
+        "days_stuck_threshold": 7,
+        "completion_threshold_percent": 50
+      }
+    },
+    "nps_csat_monitor": {
+      "enabled": false,
+      "interval_hours": 24,
+      "description": "Monitors NPS and CSAT survey responses",
+      "params": {
+        "nps_alert_threshold": 6,
+        "csat_alert_threshold": 3
+      }
+    },
+    "support_sla_tracker": {
+      "enabled": true,
+      "interval_hours": 2,
+      "description": "Tracks support ticket SLA compliance",
+      "params": {
+        "sla_breach_alert": true,
+        "hours_until_breach": 2
+      }
+    },
+    "upsell_detector": {
+      "enabled": false,
+      "interval_hours": 168,
+      "description": "Identifies upsell and expansion opportunities",
+      "params": {
+        "usage_threshold_percent": 80,
+        "health_score_min": 75
+      }
+    },
+    "retention_analyzer": {
+      "enabled": false,
+      "interval_hours": 168,
+      "description": "Analyzes retention patterns and cohorts",
+      "params": {
+        "cohort_size_min": 10,
+        "retention_rate_threshold": 0.85
+      }
+    }
+  }
+}
