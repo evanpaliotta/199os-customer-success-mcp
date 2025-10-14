@@ -304,7 +304,10 @@ class ZendeskClient:
         priority: Optional[str] = None,
         assignee_id: Optional[int] = None,
         tags: Optional[List[str]] = None,
-        custom_fields: Optional[Dict[str, Any]] = None
+        custom_fields: Optional[Dict[str, Any]] = None,
+        subject: Optional[str] = None,
+        comment: Optional[str] = None,
+        public_comment: bool = True
     ) -> Dict[str, Any]:
         """
         Update an existing ticket.
@@ -316,6 +319,9 @@ class ZendeskClient:
             assignee_id: Zendesk user ID to assign ticket to
             tags: New tags to add to ticket
             custom_fields: Custom field updates {field_id: value}
+            subject: Updated ticket subject
+            comment: Comment to add with update
+            public_comment: Whether comment is visible to requester
 
         Returns:
             Dict with update status
@@ -328,7 +334,7 @@ class ZendeskClient:
             }
 
         try:
-            from zenpy.lib.api_objects import Ticket, CustomField
+            from zenpy.lib.api_objects import Ticket, CustomField, Comment
 
             def _update():
                 # Get existing ticket
@@ -341,6 +347,8 @@ class ZendeskClient:
                     ticket.priority = priority
                 if assignee_id:
                     ticket.assignee_id = assignee_id
+                if subject:
+                    ticket.subject = subject
                 if tags:
                     # Merge with existing tags
                     existing_tags = set(ticket.tags or [])
@@ -351,6 +359,13 @@ class ZendeskClient:
                         CustomField(id=field_id, value=value)
                         for field_id, value in custom_fields.items()
                     ]
+
+                # Add comment if provided
+                if comment:
+                    ticket.comment = Comment(
+                        body=comment,
+                        public=public_comment
+                    )
 
                 # Update ticket via API
                 updated_ticket = self.client.tickets.update(ticket)
@@ -365,7 +380,8 @@ class ZendeskClient:
                 "zendesk_ticket_updated",
                 ticket_id=ticket_id,
                 status=status,
-                priority=priority
+                priority=priority,
+                comment_added=bool(comment)
             )
 
             return {
@@ -374,6 +390,7 @@ class ZendeskClient:
                 "updated_at": updated_ticket.updated_at.isoformat() if updated_ticket.updated_at else None,
                 "status_zendesk": updated_ticket.status,
                 "priority": updated_ticket.priority,
+                "comment_added": bool(comment),
                 "ticket_url": f"https://{self.subdomain}.zendesk.com/agent/tickets/{updated_ticket.id}"
             }
 
@@ -634,3 +651,444 @@ class ZendeskClient:
                 "message": "Failed to search tickets",
                 "tickets": []
             }
+
+    def create_user(
+        self,
+        name: str,
+        email: str,
+        role: str = "end-user",
+        organization_id: Optional[int] = None,
+        phone: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        user_fields: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Create a new Zendesk user.
+
+        Args:
+            name: User's full name
+            email: User's email address
+            role: User role (end-user, agent, admin)
+            organization_id: Organization ID to associate user with
+            phone: User's phone number
+            tags: Tags for user
+            user_fields: Custom user field values
+
+        Returns:
+            Dict with user creation status
+        """
+        if not self.client:
+            logger.warning("zendesk_not_configured", action="create_user")
+            return {
+                "status": "degraded",
+                "error": "Zendesk not configured"
+            }
+
+        try:
+            from zenpy.lib.api_objects import User
+
+            def _create():
+                user_data = {
+                    "name": name,
+                    "email": email,
+                    "role": role
+                }
+
+                if organization_id:
+                    user_data["organization_id"] = organization_id
+                if phone:
+                    user_data["phone"] = phone
+                if tags:
+                    user_data["tags"] = tags
+                if user_fields:
+                    user_data["user_fields"] = user_fields
+
+                user = User(**user_data)
+                created_user = self.client.users.create(user)
+                return created_user
+
+            created_user = self.circuit_breaker.call(
+                self._retry_with_backoff,
+                _create
+            )
+
+            logger.info(
+                "zendesk_user_created",
+                user_id=created_user.id,
+                email=email,
+                role=role
+            )
+
+            return {
+                "status": "success",
+                "user_id": created_user.id,
+                "name": created_user.name,
+                "email": created_user.email,
+                "role": created_user.role,
+                "created_at": created_user.created_at.isoformat() if created_user.created_at else None
+            }
+
+        except Exception as e:
+            logger.error(
+                "zendesk_create_user_failed",
+                error=str(e),
+                email=email
+            )
+            return {
+                "status": "failed",
+                "error": str(e),
+                "message": f"Failed to create user {email}"
+            }
+
+    def bulk_create_tickets(
+        self,
+        tickets: List[Dict[str, Any]],
+        batch_size: int = 100
+    ) -> Dict[str, Any]:
+        """
+        Create multiple tickets in bulk.
+
+        Args:
+            tickets: List of ticket dictionaries with subject, description, requester_email
+            batch_size: Number of tickets per API call (max 100)
+
+        Returns:
+            Dict with bulk creation results
+        """
+        if not self.client:
+            logger.warning("zendesk_not_configured", action="bulk_create_tickets")
+            return {
+                "status": "degraded",
+                "error": "Zendesk not configured",
+                "total": 0,
+                "successful": 0,
+                "failed": 0
+            }
+
+        try:
+            from zenpy.lib.api_objects import Ticket, User
+
+            total = len(tickets)
+            successful = 0
+            failed = 0
+            errors = []
+            created_ticket_ids = []
+
+            # Process in batches
+            for i in range(0, total, batch_size):
+                batch = tickets[i:i + batch_size]
+
+                def _create_batch():
+                    ticket_objects = []
+                    for ticket_data in batch:
+                        ticket = Ticket(
+                            subject=ticket_data.get('subject'),
+                            description=ticket_data.get('description'),
+                            requester=User(email=ticket_data.get('requester_email')),
+                            priority=ticket_data.get('priority', 'normal'),
+                            tags=ticket_data.get('tags', [])
+                        )
+                        ticket_objects.append(ticket)
+
+                    # Zenpy bulk create
+                    job_status = self.client.tickets.create_many(ticket_objects)
+                    return job_status
+
+                try:
+                    job = self.circuit_breaker.call(
+                        self._retry_with_backoff,
+                        _create_batch
+                    )
+
+                    # Track success
+                    successful += len(batch)
+                    logger.info(
+                        "zendesk_bulk_tickets_created",
+                        batch_size=len(batch),
+                        batch_num=i // batch_size + 1
+                    )
+
+                except Exception as e:
+                    failed += len(batch)
+                    errors.append({
+                        'batch': i // batch_size + 1,
+                        'error': str(e)
+                    })
+                    logger.error(
+                        "zendesk_bulk_create_batch_failed",
+                        batch_num=i // batch_size + 1,
+                        error=str(e)
+                    )
+
+            return {
+                "status": "success" if failed == 0 else "partial",
+                "total": total,
+                "successful": successful,
+                "failed": failed,
+                "errors": errors if errors else None,
+                "message": f"Created {successful}/{total} tickets successfully"
+            }
+
+        except Exception as e:
+            logger.error(
+                "zendesk_bulk_create_failed",
+                error=str(e),
+                total_tickets=len(tickets)
+            )
+            return {
+                "status": "failed",
+                "error": str(e),
+                "total": len(tickets),
+                "successful": 0,
+                "failed": len(tickets)
+            }
+
+    def bulk_update_tickets(
+        self,
+        ticket_updates: List[Dict[str, Any]],
+        batch_size: int = 100
+    ) -> Dict[str, Any]:
+        """
+        Update multiple tickets in bulk.
+
+        Args:
+            ticket_updates: List of dicts with ticket_id and update fields
+            batch_size: Number of tickets per API call
+
+        Returns:
+            Dict with bulk update results
+        """
+        if not self.client:
+            logger.warning("zendesk_not_configured", action="bulk_update_tickets")
+            return {
+                "status": "degraded",
+                "error": "Zendesk not configured",
+                "total": 0,
+                "successful": 0,
+                "failed": 0
+            }
+
+        try:
+            from zenpy.lib.api_objects import Ticket
+
+            total = len(ticket_updates)
+            successful = 0
+            failed = 0
+            errors = []
+
+            # Process in batches
+            for i in range(0, total, batch_size):
+                batch = ticket_updates[i:i + batch_size]
+
+                def _update_batch():
+                    tickets_to_update = []
+                    for update_data in batch:
+                        ticket_id = update_data.get('ticket_id')
+                        ticket = self.client.tickets(id=ticket_id)
+
+                        # Apply updates
+                        if 'status' in update_data:
+                            ticket.status = update_data['status']
+                        if 'priority' in update_data:
+                            ticket.priority = update_data['priority']
+                        if 'tags' in update_data:
+                            existing_tags = set(ticket.tags or [])
+                            existing_tags.update(update_data['tags'])
+                            ticket.tags = list(existing_tags)
+
+                        tickets_to_update.append(ticket)
+
+                    # Bulk update
+                    job_status = self.client.tickets.update_many(tickets_to_update)
+                    return job_status
+
+                try:
+                    job = self.circuit_breaker.call(
+                        self._retry_with_backoff,
+                        _update_batch
+                    )
+
+                    successful += len(batch)
+                    logger.info(
+                        "zendesk_bulk_tickets_updated",
+                        batch_size=len(batch),
+                        batch_num=i // batch_size + 1
+                    )
+
+                except Exception as e:
+                    failed += len(batch)
+                    errors.append({
+                        'batch': i // batch_size + 1,
+                        'error': str(e)
+                    })
+                    logger.error(
+                        "zendesk_bulk_update_batch_failed",
+                        batch_num=i // batch_size + 1,
+                        error=str(e)
+                    )
+
+            return {
+                "status": "success" if failed == 0 else "partial",
+                "total": total,
+                "successful": successful,
+                "failed": failed,
+                "errors": errors if errors else None,
+                "message": f"Updated {successful}/{total} tickets successfully"
+            }
+
+        except Exception as e:
+            logger.error(
+                "zendesk_bulk_update_failed",
+                error=str(e),
+                total_tickets=len(ticket_updates)
+            )
+            return {
+                "status": "failed",
+                "error": str(e),
+                "total": len(ticket_updates),
+                "successful": 0,
+                "failed": len(ticket_updates)
+            }
+
+    def get_ticket_metrics(
+        self,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Get ticket metrics and statistics.
+
+        Args:
+            start_date: Start date for metrics (YYYY-MM-DD)
+            end_date: End date for metrics (YYYY-MM-DD)
+
+        Returns:
+            Dict with ticket metrics
+        """
+        if not self.client:
+            logger.warning("zendesk_not_configured", action="get_ticket_metrics")
+            return {
+                "status": "degraded",
+                "error": "Zendesk not configured"
+            }
+
+        try:
+            def _get_metrics():
+                # Use Zendesk incremental API for efficiency
+                metrics = {
+                    "total_tickets": 0,
+                    "open_tickets": 0,
+                    "pending_tickets": 0,
+                    "solved_tickets": 0,
+                    "by_priority": {"low": 0, "normal": 0, "high": 0, "urgent": 0}
+                }
+
+                # Query tickets
+                for ticket in self.client.tickets():
+                    metrics["total_tickets"] += 1
+
+                    if ticket.status == "open":
+                        metrics["open_tickets"] += 1
+                    elif ticket.status == "pending":
+                        metrics["pending_tickets"] += 1
+                    elif ticket.status == "solved":
+                        metrics["solved_tickets"] += 1
+
+                    priority = ticket.priority or "normal"
+                    if priority in metrics["by_priority"]:
+                        metrics["by_priority"][priority] += 1
+
+                return metrics
+
+            metrics = self.circuit_breaker.call(
+                self._retry_with_backoff,
+                _get_metrics
+            )
+
+            logger.info("zendesk_metrics_retrieved", total_tickets=metrics["total_tickets"])
+
+            return {
+                "status": "success",
+                "metrics": metrics,
+                "period": {
+                    "start_date": start_date,
+                    "end_date": end_date
+                }
+            }
+
+        except Exception as e:
+            logger.error("zendesk_get_metrics_failed", error=str(e))
+            return {
+                "status": "failed",
+                "error": str(e),
+                "message": "Failed to retrieve ticket metrics"
+            }
+
+    def get_sla_policy(self, policy_id: Optional[int] = None) -> Dict[str, Any]:
+        """
+        Get SLA policy information.
+
+        Args:
+            policy_id: Specific SLA policy ID (optional)
+
+        Returns:
+            Dict with SLA policy details
+        """
+        if not self.client:
+            logger.warning("zendesk_not_configured", action="get_sla_policy")
+            return {
+                "status": "degraded",
+                "error": "Zendesk not configured"
+            }
+
+        try:
+            def _get_policy():
+                if policy_id:
+                    return self.client.sla_policies(id=policy_id)
+                else:
+                    # Get all policies
+                    return list(self.client.sla_policies())
+
+            policies = self.circuit_breaker.call(
+                self._retry_with_backoff,
+                _get_policy
+            )
+
+            logger.info("zendesk_sla_policy_retrieved")
+
+            if isinstance(policies, list):
+                return {
+                    "status": "success",
+                    "policies": [
+                        {
+                            "id": p.id,
+                            "title": p.title,
+                            "description": p.description
+                        }
+                        for p in policies
+                    ]
+                }
+            else:
+                return {
+                    "status": "success",
+                    "policy": {
+                        "id": policies.id,
+                        "title": policies.title,
+                        "description": policies.description
+                    }
+                }
+
+        except Exception as e:
+            logger.error("zendesk_get_sla_policy_failed", error=str(e))
+            return {
+                "status": "failed",
+                "error": str(e),
+                "message": "Failed to retrieve SLA policy"
+            }
+
+    def close(self):
+        """Close the Zendesk client and cleanup resources"""
+        if self.client:
+            logger.info("zendesk_client_closing")
+            self.client = None
+        logger.info("zendesk_client_closed")

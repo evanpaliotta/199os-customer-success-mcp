@@ -6,6 +6,8 @@ This module contains pytest configuration and shared fixtures used across all te
 
 import pytest
 import asyncio
+import sys
+from pathlib import Path
 from datetime import datetime, date, timedelta
 from typing import Dict, Any
 from faker import Faker
@@ -16,6 +18,14 @@ from src.models.customer_models import (
     RiskIndicator, ChurnPrediction, CustomerTier, LifecycleStage,
     HealthTrend, AccountStatus
 )
+
+# Import test fixtures - using relative imports
+tests_dir = Path(__file__).parent
+sys.path.insert(0, str(tests_dir))
+
+from fixtures.cs_fixtures import *
+from fixtures.api_fixtures import *
+from fixtures.database_fixtures import *
 
 # Initialize Faker for generating test data
 fake = Faker()
