@@ -7,6 +7,8 @@ from mcp.server.fastmcp import Context
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
 from src.security.input_validation import validate_client_id, ValidationError
+from src.database import SessionLocal
+from src.database.models import CustomerAccount
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -122,6 +124,54 @@ def register_tools(mcp):
                 tier=tier,
                 contract_value=contract_value
             )
+
+            # Save to database
+            db = SessionLocal()
+            try:
+                # Convert string dates to date objects
+                contract_start_date_obj = datetime.strptime(start_date, "%Y-%m-%d").date()
+                contract_end_date_obj = datetime.strptime(end_date, "%Y-%m-%d").date()
+
+                # Create CustomerAccount ORM object
+                new_customer = CustomerAccount(
+                    client_id=client_id,
+                    client_name=client_name,
+                    company_name=company_name,
+                    industry=industry,
+                    tier=tier.lower(),
+                    contract_value=contract_value,
+                    contract_start_date=contract_start_date_obj,
+                    contract_end_date=contract_end_date_obj,
+                    renewal_date=contract_end_date_obj,
+                    primary_contact_email=primary_contact_email,
+                    primary_contact_name=primary_contact_name,
+                    health_score=50,
+                    health_trend="stable",
+                    lifecycle_stage="onboarding",
+                    status="active"
+                )
+
+                # Add and commit to database
+                db.add(new_customer)
+                db.commit()
+                db.refresh(new_customer)
+
+                logger.info(
+                    "client_persisted_to_database",
+                    client_id=client_id,
+                    database_id=new_customer.id
+                )
+            except Exception as db_error:
+                db.rollback()
+                logger.error(
+                    "client_registration_db_error",
+                    client_id=client_id,
+                    error=str(db_error)
+                )
+                # Don't fail the registration if DB write fails, just log it
+                # In production, you might want to raise this error
+            finally:
+                db.close()
 
             return {
                 'status': 'success',
