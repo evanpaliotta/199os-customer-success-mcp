@@ -373,13 +373,24 @@ def validate_security_configuration() -> Tuple[bool, List[str], List[str]]:
 
 def setup_logging():
     """
-    Configure structlog to use stderr instead of stdout to prevent JSON corruption in MCP.
+    Configure structlog AND standard Python logging to use stderr for MCP compliance.
     MCP tools must return clean JSON on stdout, so all logging goes to stderr.
     """
+    import logging
+
+    # Configure standard Python logging to use stderr (for autonomous tools, etc.)
+    logging.basicConfig(
+        level=logging.INFO,
+        format='[%(levelname)s] %(name)s: %(message)s',
+        stream=sys.stderr,
+        force=True  # Override any existing configuration
+    )
+
     structlog.configure(
         processors=[
             structlog.processors.TimeStamper(fmt="iso"),
-            structlog.dev.ConsoleRenderer()
+            # Use plain renderer without colors to avoid MCP protocol violations
+            structlog.dev.ConsoleRenderer(colors=False)
         ],
         context_class=dict,
         logger_factory=structlog.PrintLoggerFactory(file=sys.stderr),
