@@ -3,7 +3,7 @@ Autonomous Control Tools
 MCP tools to control and monitor autonomous workers
 """
 
-import logging
+import structlog
 from pathlib import Path
 import sys
 
@@ -14,7 +14,7 @@ sys.path.insert(0, str(project_root))
 from autonomous.config_manager import ConfigManager
 from autonomous.scheduler import AutonomousScheduler
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # Global instances (initialized when server starts)
 _config_manager = None

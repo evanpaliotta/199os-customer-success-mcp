@@ -45,7 +45,7 @@ def get_enhanced_agent():
 safe_file_ops = SafeFileOperations()
 
 # Initialize structured logger
-logger = structlog.get_logger()
+logger = structlog.get_logger(__name__)
 
 
 # ============================================================================
