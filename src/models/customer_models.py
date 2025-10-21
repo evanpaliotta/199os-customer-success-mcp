@@ -502,7 +502,7 @@ class ChurnPrediction(BaseModel):
         ge=0,
         le=1
     )
-    contributing_factors: List[Dict[str, float]] = Field(
+    contributing_factors: List[Dict[str, Any]] = Field(
         default_factory=list,
         description="Factors contributing to churn risk with weights"
     )
