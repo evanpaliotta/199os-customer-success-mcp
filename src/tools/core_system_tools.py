@@ -3,7 +3,7 @@ Core System Tools
 System configuration, client management, and setup for Customer Success MCP
 """
 
-from mcp.server.fastmcp import Context
+from fastmcp import Context
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
 from src.security.input_validation import validate_client_id, ValidationError
@@ -233,158 +233,158 @@ def register_tools(mcp):
 
             await ctx.info(f"Fetching overview for client: {client_id}")
 
-            # Mock client data (replace with actual database query in production)
-            # This demonstrates the expected data structure
-            client_overview = {
-                # Basic information
-                "client_id": client_id,
-                "client_name": "Acme Corporation",
-                "company_name": "Acme Corp Inc.",
-                "industry": "SaaS",
-                "tier": "professional",
+            # Query database for actual client data
+            db = SessionLocal()
+            try:
+                customer = db.query(CustomerAccount).filter(
+                    CustomerAccount.client_id == client_id
+                ).first()
 
-                # Health and lifecycle
-                "health_score": 82,
-                "health_trend": "improving",  # improving, stable, declining
-                "lifecycle_stage": "active",  # onboarding, active, at_risk, churned, expansion
-                "csm_assigned": "Sarah Chen",
-
-                # Contract information
-                "contract_value": 72000,
-                "contract_start_date": "2024-01-15",
-                "contract_end_date": "2025-01-15",
-                "days_until_renewal": 127,
-                "renewal_probability": 0.89,
-                "renewal_risk_level": "low",  # low, medium, high
-
-                # Onboarding status
-                "onboarding": {
-                    "status": "completed",
-                    "completion_rate": 1.0,
-                    "completion_date": "2024-02-08",
-                    "time_to_value_days": 24,
-                    "milestones_completed": 4,
-                    "milestones_total": 4,
-                    "training_completion_rate": 0.95
-                },
-
-                # Engagement metrics
-                "engagement": {
-                    "last_login": "2025-10-08",
-                    "days_since_last_login": 2,
-                    "weekly_active_users": 45,
-                    "monthly_active_users": 68,
-                    "total_users_provisioned": 75,
-                    "user_activation_rate": 0.91,
-                    "feature_adoption_rate": 0.73,
-                    "average_session_duration_minutes": 42,
-                    "weekly_sessions": 312,
-                    "engagement_trend": "increasing"
-                },
-
-                # Support metrics
-                "support": {
-                    "open_tickets": 2,
-                    "tickets_this_month": 8,
-                    "tickets_last_month": 12,
-                    "ticket_trend": "decreasing",
-                    "avg_resolution_time_hours": 4.2,
-                    "first_response_time_minutes": 12,
-                    "satisfaction_score": 4.6,
-                    "satisfaction_trend": "stable",
-                    "escalations_this_month": 0,
-                    "knowledge_base_usage": 23
-                },
-
-                # Product usage
-                "product_usage": {
-                    "core_features_used": 18,
-                    "core_features_total": 25,
-                    "advanced_features_used": 4,
-                    "advanced_features_total": 15,
-                    "integrations_active": 3,
-                    "integrations_available": 8,
-                    "api_calls_this_month": 45230,
-                    "storage_used_gb": 127.5,
-                    "storage_limit_gb": 500
-                },
-
-                # Revenue and expansion
-                "revenue": {
-                    "current_arr": 72000,
-                    "expansion_opportunities": 3,
-                    "expansion_potential_arr": 28000,
-                    "upsell_likelihood": 0.72,
-                    "cross_sell_opportunities": ["API Add-on", "Premium Support", "Advanced Analytics"],
-                    "lifetime_value": 156000,
-                    "customer_acquisition_cost": 18000,
-                    "ltv_cac_ratio": 8.67
-                },
-
-                # Communication history
-                "communication": {
-                    "last_ebr_date": "2024-09-15",
-                    "next_ebr_scheduled": "2024-12-15",
-                    "emails_sent": 24,
-                    "emails_opened": 18,
-                    "email_engagement_rate": 0.75,
-                    "last_csm_touchpoint": "2025-10-05",
-                    "touchpoint_frequency_days": 7
-                },
-
-                # Risks identified
-                "risks": [],  # Empty for healthy account
-
-                # Opportunities identified
-                "opportunities": [
-                    {
-                        "type": "upsell",
-                        "description": "Premium features upsell",
-                        "potential_arr": 12000,
-                        "confidence": 0.78
-                    },
-                    {
-                        "type": "expansion",
-                        "description": "Additional user licenses (20 seats)",
-                        "potential_arr": 9600,
-                        "confidence": 0.65
-                    },
-                    {
-                        "type": "cross_sell",
-                        "description": "Professional services package",
-                        "potential_arr": 6400,
-                        "confidence": 0.54
+                if not customer:
+                    return {
+                        'status': 'failed',
+                        'error': f'Client {client_id} not found in database'
                     }
-                ],
 
-                # Recent activity
-                "recent_activity": [
-                    {
-                        "date": "2025-10-08",
-                        "type": "product_usage",
-                        "description": "High usage spike - 3 new features adopted"
-                    },
-                    {
-                        "date": "2025-10-05",
-                        "type": "support",
-                        "description": "Support ticket resolved - API integration"
-                    },
-                    {
-                        "date": "2025-10-01",
-                        "type": "communication",
-                        "description": "Monthly check-in call with CSM"
-                    }
-                ]
-            }
+                # Calculate days until renewal
+                days_until_renewal = None
+                renewal_probability = None
+                renewal_risk_level = "unknown"
 
-            # Calculate health score components for transparency
-            health_components = {
-                "usage_score": 85,
-                "engagement_score": 88,
-                "support_score": 82,
-                "satisfaction_score": 92,
-                "payment_score": 100
-            }
+                if customer.contract_end_date:
+                    days_until_renewal = (customer.contract_end_date - datetime.now().date()).days
+
+                    # Simple renewal probability calculation
+                    if customer.health_score >= 80:
+                        renewal_probability = 0.90
+                        renewal_risk_level = "low"
+                    elif customer.health_score >= 60:
+                        renewal_probability = 0.70
+                        renewal_risk_level = "medium"
+                    else:
+                        renewal_probability = 0.40
+                        renewal_risk_level = "high"
+
+                # Build client overview from actual database data
+                client_overview = {
+                    # Basic information (from database)
+                    "client_id": customer.client_id,
+                    "client_name": customer.client_name,
+                    "company_name": customer.company_name,
+                    "industry": customer.industry,
+                    "tier": customer.tier,
+
+                    # Health and lifecycle (from database)
+                    "health_score": customer.health_score,
+                    "health_trend": customer.health_trend,
+                    "lifecycle_stage": customer.lifecycle_stage,
+                    "csm_assigned": customer.csm_assigned,
+
+                    # Contract information (from database)
+                    "contract_value": customer.contract_value,
+                    "contract_start_date": customer.contract_start_date.isoformat() if customer.contract_start_date else None,
+                    "contract_end_date": customer.contract_end_date.isoformat() if customer.contract_end_date else None,
+                    "days_until_renewal": days_until_renewal,
+                    "renewal_probability": renewal_probability,
+                    "renewal_risk_level": renewal_risk_level,
+
+                    # Onboarding status (placeholder - to be implemented with onboarding tracking)
+                    "onboarding": {
+                        "status": "in_progress" if customer.lifecycle_stage == "onboarding" else "completed",
+                        "completion_rate": None,
+                        "completion_date": None,
+                        "time_to_value_days": None,
+                        "milestones_completed": None,
+                        "milestones_total": None,
+                        "training_completion_rate": None
+                    },
+
+                    # Engagement metrics (placeholder - to be implemented with usage tracking)
+                    "engagement": {
+                        "last_login": customer.last_engagement_date.isoformat() if customer.last_engagement_date else None,
+                        "days_since_last_login": (datetime.now() - customer.last_engagement_date).days if customer.last_engagement_date else None,
+                        "weekly_active_users": None,
+                        "monthly_active_users": None,
+                        "total_users_provisioned": None,
+                        "user_activation_rate": None,
+                        "feature_adoption_rate": None,
+                        "average_session_duration_minutes": None,
+                        "weekly_sessions": None,
+                        "engagement_trend": None
+                    },
+
+                    # Support metrics (placeholder - to be implemented with support ticket tracking)
+                    "support": {
+                        "open_tickets": None,
+                        "tickets_this_month": None,
+                        "tickets_last_month": None,
+                        "ticket_trend": None,
+                        "avg_resolution_time_hours": None,
+                        "first_response_time_minutes": None,
+                        "satisfaction_score": None,
+                        "satisfaction_trend": None,
+                        "escalations_this_month": None,
+                        "knowledge_base_usage": None
+                    },
+
+                    # Product usage (placeholder - to be implemented with usage analytics)
+                    "product_usage": {
+                        "core_features_used": None,
+                        "core_features_total": None,
+                        "advanced_features_used": None,
+                        "advanced_features_total": None,
+                        "integrations_active": None,
+                        "integrations_available": None,
+                        "api_calls_this_month": None,
+                        "storage_used_gb": None,
+                        "storage_limit_gb": None
+                    },
+
+                    # Revenue and expansion (basic from database, expansion to be enhanced)
+                    "revenue": {
+                        "current_arr": customer.contract_value,
+                        "expansion_opportunities": None,
+                        "expansion_potential_arr": None,
+                        "upsell_likelihood": None,
+                        "cross_sell_opportunities": [],
+                        "lifetime_value": None,
+                        "customer_acquisition_cost": None,
+                        "ltv_cac_ratio": None
+                    },
+
+                    # Communication history (placeholder - to be implemented with communication tracking)
+                    "communication": {
+                        "last_ebr_date": None,
+                        "next_ebr_scheduled": None,
+                        "emails_sent": None,
+                        "emails_opened": None,
+                        "email_engagement_rate": None,
+                        "last_csm_touchpoint": None,
+                        "touchpoint_frequency_days": None
+                    },
+
+                    # Risks identified (to be enhanced with risk scoring)
+                    "risks": [],
+
+                    # Opportunities identified (to be enhanced with opportunity tracking)
+                    "opportunities": [],
+
+                    # Recent activity (placeholder - to be implemented with activity logging)
+                    "recent_activity": []
+                }
+
+                # Calculate basic health score components
+                # Note: These are placeholder calculations until usage/engagement tracking is implemented
+                health_components = {
+                    "usage_score": None,  # Requires usage tracking
+                    "engagement_score": None,  # Requires engagement tracking
+                    "support_score": None,  # Requires support ticket tracking
+                    "satisfaction_score": None,  # Requires satisfaction survey tracking
+                    "payment_score": 100 if customer.status == "active" else 0  # Basic payment health
+                }
+
+            finally:
+                db.close()
 
             logger.info(
                 "client_overview_retrieved",
@@ -481,33 +481,62 @@ def register_tools(mcp):
                     }
                 updates['tier'] = updates['tier'].lower()
 
-            # Add update timestamp
-            updates['updated_at'] = datetime.now().isoformat()
+            # Query database and update actual client record
+            db = SessionLocal()
+            try:
+                customer = db.query(CustomerAccount).filter(
+                    CustomerAccount.client_id == client_id
+                ).first()
 
-            # Mock updated record (replace with actual database update)
-            updated_record = {
-                "client_id": client_id,
-                "client_name": updates.get('client_name', 'Acme Corporation'),
-                "company_name": updates.get('company_name', 'Acme Corp Inc.'),
-                "industry": updates.get('industry', 'SaaS'),
-                "tier": updates.get('tier', 'professional'),
-                "contract_value": updates.get('contract_value', 72000),
-                "contract_start_date": updates.get('contract_start_date', '2024-01-15'),
-                "contract_end_date": updates.get('contract_end_date', '2025-01-15'),
-                "primary_contact_email": updates.get('primary_contact_email', 'john@acme.com'),
-                "primary_contact_name": updates.get('primary_contact_name', 'John Smith'),
-                "csm_assigned": updates.get('csm_assigned', 'Sarah Chen'),
-                "status": updates.get('status', 'active'),
-                "updated_at": updates['updated_at']
-            }
+                if not customer:
+                    return {
+                        'status': 'failed',
+                        'error': f'Client {client_id} not found in database'
+                    }
 
-            # Log the update
-            logger.info(
-                "client_info_updated",
-                client_id=client_id,
-                fields_updated=list(updates.keys()),
-                update_count=len(updates)
-            )
+                # Store previous values for audit
+                previous_values = {}
+
+                # Update only the fields that were provided
+                for field, value in updates.items():
+                    if hasattr(customer, field):
+                        previous_values[field] = getattr(customer, field)
+                        setattr(customer, field, value)
+
+                # Update timestamp
+                customer.updated_at = datetime.now()
+
+                # Commit changes to database
+                db.commit()
+                db.refresh(customer)
+
+                # Build updated record from database
+                updated_record = {
+                    "client_id": customer.client_id,
+                    "client_name": customer.client_name,
+                    "company_name": customer.company_name,
+                    "industry": customer.industry,
+                    "tier": customer.tier,
+                    "contract_value": customer.contract_value,
+                    "contract_start_date": customer.contract_start_date.isoformat() if customer.contract_start_date else None,
+                    "contract_end_date": customer.contract_end_date.isoformat() if customer.contract_end_date else None,
+                    "primary_contact_email": customer.primary_contact_email,
+                    "primary_contact_name": customer.primary_contact_name,
+                    "csm_assigned": customer.csm_assigned,
+                    "status": customer.status,
+                    "updated_at": customer.updated_at.isoformat()
+                }
+
+                # Log the update
+                logger.info(
+                    "client_info_updated",
+                    client_id=client_id,
+                    fields_updated=list(updates.keys()),
+                    update_count=len(updates)
+                )
+
+            finally:
+                db.close()
 
             return {
                 'status': 'success',
@@ -604,111 +633,64 @@ def register_tools(mcp):
                     'error': 'health_score_max must be between 0 and 100'
                 }
 
-            # Mock client list (replace with actual database query)
-            all_clients = [
-                {
-                    "client_id": "cs_1696800000_acme",
-                    "client_name": "Acme Corporation",
-                    "tier": "professional",
-                    "lifecycle_stage": "active",
-                    "health_score": 82,
-                    "health_trend": "improving",
-                    "contract_value": 72000,
-                    "days_until_renewal": 127,
-                    "csm_assigned": "Sarah Chen",
-                    "active_users": 45,
-                    "support_tickets_open": 2
-                },
-                {
-                    "client_id": "cs_1696800100_techco",
-                    "client_name": "TechCo Industries",
-                    "tier": "enterprise",
-                    "lifecycle_stage": "expansion",
-                    "health_score": 95,
-                    "health_trend": "stable",
-                    "contract_value": 240000,
-                    "days_until_renewal": 89,
-                    "csm_assigned": "Michael Torres",
-                    "active_users": 312,
-                    "support_tickets_open": 1
-                },
-                {
-                    "client_id": "cs_1696800200_startup",
-                    "client_name": "StartupXYZ",
-                    "tier": "standard",
-                    "lifecycle_stage": "onboarding",
-                    "health_score": 62,
-                    "health_trend": "stable",
-                    "contract_value": 24000,
-                    "days_until_renewal": 358,
-                    "csm_assigned": "Jessica Park",
-                    "active_users": 8,
-                    "support_tickets_open": 3
-                },
-                {
-                    "client_id": "cs_1696800300_legacy",
-                    "client_name": "Legacy Systems Inc",
-                    "tier": "professional",
-                    "lifecycle_stage": "at_risk",
-                    "health_score": 45,
-                    "health_trend": "declining",
-                    "contract_value": 96000,
-                    "days_until_renewal": 42,
-                    "csm_assigned": "David Kim",
-                    "active_users": 12,
-                    "support_tickets_open": 7
-                },
-                {
-                    "client_id": "cs_1696800400_growth",
-                    "client_name": "GrowthCo",
-                    "tier": "starter",
-                    "lifecycle_stage": "active",
-                    "health_score": 78,
-                    "health_trend": "improving",
-                    "contract_value": 12000,
-                    "days_until_renewal": 203,
-                    "csm_assigned": "Sarah Chen",
-                    "active_users": 15,
-                    "support_tickets_open": 1
-                }
-            ]
+            # Query database for actual client list
+            db = SessionLocal()
+            try:
+                # Build query with filters
+                query = db.query(CustomerAccount)
 
-            # Apply filters
-            filtered_clients = all_clients.copy()
+                if tier_filter:
+                    query = query.filter(CustomerAccount.tier == tier_filter.lower())
 
-            if tier_filter:
-                filtered_clients = [
-                    c for c in filtered_clients
-                    if c['tier'] == tier_filter.lower()
-                ]
+                if lifecycle_stage_filter:
+                    query = query.filter(CustomerAccount.lifecycle_stage == lifecycle_stage_filter.lower())
 
-            if lifecycle_stage_filter:
-                filtered_clients = [
-                    c for c in filtered_clients
-                    if c['lifecycle_stage'] == lifecycle_stage_filter.lower()
-                ]
+                if health_score_min is not None:
+                    query = query.filter(CustomerAccount.health_score >= health_score_min)
 
-            if health_score_min is not None:
-                filtered_clients = [
-                    c for c in filtered_clients
-                    if c['health_score'] >= health_score_min
-                ]
+                if health_score_max is not None:
+                    query = query.filter(CustomerAccount.health_score <= health_score_max)
 
-            if health_score_max is not None:
-                filtered_clients = [
-                    c for c in filtered_clients
-                    if c['health_score'] <= health_score_max
-                ]
+                # Get total count for pagination
+                total_count = query.count()
 
-            # Apply pagination
-            total_count = len(filtered_clients)
-            paginated_clients = filtered_clients[offset:offset + limit]
+                # Apply pagination
+                customers = query.limit(limit).offset(offset).all()
+
+                # Convert database objects to client dictionaries
+                all_clients = []
+                for customer in customers:
+                    # Calculate days until renewal
+                    days_until_renewal = None
+                    if customer.contract_end_date:
+                        days_until_renewal = (customer.contract_end_date - datetime.now().date()).days
+
+                    all_clients.append({
+                        "client_id": customer.client_id,
+                        "client_name": customer.client_name,
+                        "tier": customer.tier,
+                        "lifecycle_stage": customer.lifecycle_stage,
+                        "health_score": customer.health_score,
+                        "health_trend": customer.health_trend,
+                        "contract_value": customer.contract_value,
+                        "days_until_renewal": days_until_renewal,
+                        "csm_assigned": customer.csm_assigned,
+                        "active_users": None,  # Placeholder - requires usage tracking
+                        "support_tickets_open": None  # Placeholder - requires support ticket tracking
+                    })
+
+            finally:
+                db.close()
+
+            # Pagination and filtering already applied in database query
+            paginated_clients = all_clients
 
             # Calculate summary statistics
-            if filtered_clients:
-                avg_health = sum(c['health_score'] for c in filtered_clients) / len(filtered_clients)
-                total_arr = sum(c['contract_value'] for c in filtered_clients)
-                total_users = sum(c['active_users'] for c in filtered_clients)
+            if paginated_clients:
+                avg_health = sum(c['health_score'] for c in paginated_clients) / len(paginated_clients)
+                total_arr = sum(c['contract_value'] for c in paginated_clients)
+                # Note: active_users is None for all clients until usage tracking is implemented
+                total_users = sum(c['active_users'] or 0 for c in paginated_clients)
             else:
                 avg_health = 0
                 total_arr = 0

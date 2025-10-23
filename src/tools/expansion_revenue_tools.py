@@ -3,11 +3,13 @@ Growth & Revenue Expansion Tools
 Processes 114-121: Upsell, cross-sell, renewals, and CLV optimization
 """
 
-from mcp.server.fastmcp import Context
+from fastmcp import Context
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
 from src.security.input_validation import validate_client_id, ValidationError
 from src.models.renewal_models import RenewalForecast, ExpansionOpportunity, ContractDetails
+from src.database import SessionLocal
+from src.models.customer_models import CustomerAccount
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -41,43 +43,101 @@ def register_tools(mcp):
                     return {"status": "failed", "error": f"Invalid client_id: {str(e)}"}
                     
             await ctx.info(f"Identifying upsell opportunities")
-            
-            opportunities = [
-                {
-                    "client_id": "cs_1696800000_acme",
-                    "client_name": "Acme Corporation",
-                    "current_tier": "professional",
-                    "recommended_tier": "enterprise",
-                    "opportunity_type": "tier_upgrade",
-                    "current_arr": 72000,
-                    "potential_arr": 144000,
-                    "expansion_value": 72000,
-                    "probability": 0.75,
-                    "health_score": 85,
-                    "usage_rate": 0.92,
-                    "readiness_indicators": [
-                        "Using 92% of current plan limits",
-                        "Requested enterprise features 3 times",
-                        "Team size growing (15 → 45 users)",
-                        "High engagement score (8.5/10)"
-                    ],
-                    "recommended_approach": "Executive business review with ROI case study",
-                    "timeline": "30-60 days",
-                    "next_steps": [
-                        "Schedule executive meeting",
-                        "Prepare ROI analysis",
-                        "Create customized proposal"
-                    ]
+
+            # Query database for customers meeting upsell criteria
+            db = SessionLocal()
+            try:
+                query = db.query(CustomerAccount).filter(
+                    CustomerAccount.health_score >= min_health_score
+                )
+
+                # If specific client requested, filter to that client
+                if client_id:
+                    query = query.filter(CustomerAccount.client_id == client_id)
+
+                customers = query.all()
+
+                # Tier upgrade mapping and pricing
+                tier_upgrades = {
+                    'starter': {'next_tier': 'standard', 'multiplier': 2.0},
+                    'standard': {'next_tier': 'professional', 'multiplier': 2.5},
+                    'professional': {'next_tier': 'enterprise', 'multiplier': 2.0}
                 }
-            ]
-            
-            summary = {
-                "total_opportunities": len(opportunities),
-                "total_potential_arr": 520000,
-                "avg_expansion_value": 74285,
-                "by_tier_upgrade": {"standard_to_pro": 3, "pro_to_enterprise": 4},
-                "by_probability": {"high": 4, "medium": 3}
-            }
+
+                opportunities = []
+                total_potential_arr = 0
+
+                for customer in customers:
+                    current_tier = customer.tier.lower()
+
+                    # Skip if already at highest tier
+                    if current_tier not in tier_upgrades:
+                        continue
+
+                    upgrade_info = tier_upgrades[current_tier]
+                    potential_arr = customer.contract_value * upgrade_info['multiplier']
+                    expansion_value = potential_arr - customer.contract_value
+
+                    # Calculate probability based on health score
+                    if customer.health_score >= 85:
+                        probability = 0.75
+                        probability_label = "high"
+                    elif customer.health_score >= 75:
+                        probability = 0.60
+                        probability_label = "medium"
+                    else:
+                        probability = 0.40
+                        probability_label = "low"
+
+                    opportunities.append({
+                        "client_id": customer.client_id,
+                        "client_name": customer.client_name,
+                        "current_tier": current_tier,
+                        "recommended_tier": upgrade_info['next_tier'],
+                        "opportunity_type": "tier_upgrade",
+                        "current_arr": customer.contract_value,
+                        "potential_arr": potential_arr,
+                        "expansion_value": expansion_value,
+                        "probability": probability,
+                        "probability_label": probability_label,
+                        "health_score": customer.health_score,
+                        "usage_rate": None,  # Placeholder - requires usage tracking implementation
+                        "readiness_indicators": [
+                            f"Health score: {customer.health_score}/100",
+                            f"Current tier: {current_tier}",
+                            f"Lifecycle stage: {customer.lifecycle_stage}"
+                        ],
+                        "recommended_approach": "Executive business review with ROI case study" if customer.health_score >= 85 else "CSM-led discovery call",
+                        "timeline": "30-60 days" if customer.health_score >= 85 else "60-90 days",
+                        "next_steps": [
+                            "Review account health metrics",
+                            "Prepare tier comparison materials",
+                            "Schedule stakeholder meeting"
+                        ]
+                    })
+                    total_potential_arr += potential_arr
+
+                # Calculate summary statistics
+                by_tier_upgrade = {}
+                by_probability = {"high": 0, "medium": 0, "low": 0}
+
+                for opp in opportunities:
+                    upgrade_key = f"{opp['current_tier']}_to_{opp['recommended_tier']}"
+                    by_tier_upgrade[upgrade_key] = by_tier_upgrade.get(upgrade_key, 0) + 1
+                    by_probability[opp['probability_label']] += 1
+
+                avg_expansion = total_potential_arr / len(opportunities) if opportunities else 0
+
+                summary = {
+                    "total_opportunities": len(opportunities),
+                    "total_potential_arr": total_potential_arr,
+                    "avg_expansion_value": avg_expansion,
+                    "by_tier_upgrade": by_tier_upgrade,
+                    "by_probability": by_probability
+                }
+
+            finally:
+                db.close()
             
             logger.info("upsell_opportunities_identified", count=len(opportunities))
             
@@ -271,39 +331,104 @@ def register_tools(mcp):
                     return {"status": "failed", "error": f"Invalid client_id: {str(e)}"}
                     
             await ctx.info(f"Tracking renewals within {days_until_renewal} days")
-            
-            renewals = [
-                {
-                    "client_id": "cs_1696800000_acme",
-                    "client_name": "Acme Corporation",
-                    "renewal_date": (datetime.now() + timedelta(days=87)).strftime("%Y-%m-%d"),
-                    "days_until_renewal": 87,
-                    "current_arr": 72000,
-                    "contract_term": "annual",
-                    "auto_renew": False,
-                    "health_score": 85,
-                    "renewal_probability": 0.92,
-                    "reminders_scheduled": [
-                        {"type": "90_day_notice", "date": (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d"), "status": "pending"},
-                        {"type": "60_day_notice", "date": (datetime.now() + timedelta(days=27)).strftime("%Y-%m-%d"), "status": "scheduled"},
-                        {"type": "30_day_notice", "date": (datetime.now() + timedelta(days=57)).strftime("%Y-%m-%d"), "status": "scheduled"}
-                    ],
-                    "expansion_opportunities": "User count increase, tier upgrade",
-                    "key_stakeholders": ["John Smith (VP)", "Jane Doe (Admin)"]
+
+            # Query database for customers with upcoming renewals
+            db = SessionLocal()
+            try:
+                today = datetime.now().date()
+                cutoff_date = today + timedelta(days=days_until_renewal)
+
+                query = db.query(CustomerAccount).filter(
+                    CustomerAccount.contract_end_date.isnot(None),
+                    CustomerAccount.contract_end_date <= cutoff_date,
+                    CustomerAccount.contract_end_date >= today
+                )
+
+                # If specific client requested, filter to that client
+                if client_id:
+                    query = query.filter(CustomerAccount.client_id == client_id)
+
+                customers = query.order_by(CustomerAccount.contract_end_date).all()
+
+                renewals = []
+                total_arr_at_risk = 0
+                by_timeframe = {"30_days": 0, "60_days": 0, "90_days": 0}
+                auto_renew_enabled = 0
+                manual_renewal_required = 0
+
+                for customer in customers:
+                    days_until = (customer.contract_end_date - today).days
+
+                    # Calculate renewal probability based on health score
+                    if customer.health_score >= 85:
+                        renewal_probability = 0.92
+                    elif customer.health_score >= 70:
+                        renewal_probability = 0.80
+                    elif customer.health_score >= 60:
+                        renewal_probability = 0.65
+                    else:
+                        renewal_probability = 0.40
+
+                    # Generate reminder schedule
+                    reminders_scheduled = []
+                    renewal_date_dt = datetime.combine(customer.contract_end_date, datetime.min.time())
+
+                    for notice_days in [90, 60, 30]:
+                        notice_date = renewal_date_dt - timedelta(days=notice_days)
+                        if notice_date.date() >= today:
+                            status = "pending" if notice_date.date() <= today + timedelta(days=7) else "scheduled"
+                            reminders_scheduled.append({
+                                "type": f"{notice_days}_day_notice",
+                                "date": notice_date.strftime("%Y-%m-%d"),
+                                "status": status
+                            })
+
+                    # Determine if auto-renew (placeholder - would need field in database)
+                    auto_renew = False  # Placeholder
+
+                    renewals.append({
+                        "client_id": customer.client_id,
+                        "client_name": customer.client_name,
+                        "renewal_date": customer.contract_end_date.strftime("%Y-%m-%d"),
+                        "days_until_renewal": days_until,
+                        "current_arr": customer.contract_value,
+                        "contract_term": "annual",  # Placeholder - would need field in database
+                        "auto_renew": auto_renew,
+                        "health_score": customer.health_score,
+                        "renewal_probability": renewal_probability,
+                        "reminders_scheduled": reminders_scheduled,
+                        "expansion_opportunities": None,  # Placeholder - would cross-reference with upsell opportunities
+                        "key_stakeholders": [
+                            customer.primary_contact_name if customer.primary_contact_name else "Not specified"
+                        ]
+                    })
+
+                    total_arr_at_risk += customer.contract_value
+
+                    # Categorize by timeframe
+                    if days_until <= 30:
+                        by_timeframe["30_days"] += 1
+                    elif days_until <= 60:
+                        by_timeframe["60_days"] += 1
+                    else:
+                        by_timeframe["90_days"] += 1
+
+                    # Track auto-renew status
+                    if auto_renew:
+                        auto_renew_enabled += 1
+                    else:
+                        manual_renewal_required += 1
+
+                summary = {
+                    "total_renewals_tracked": len(renewals),
+                    "total_arr_at_risk": total_arr_at_risk,
+                    "by_timeframe": by_timeframe,
+                    "auto_renew_enabled": auto_renew_enabled,
+                    "manual_renewal_required": manual_renewal_required
                 }
-            ]
-            
-            summary = {
-                "total_renewals_tracked": len(renewals),
-                "total_arr_at_risk": 72000,
-                "by_timeframe": {
-                    "30_days": 5,
-                    "60_days": 12,
-                    "90_days": 24
-                },
-                "auto_renew_enabled": 15,
-                "manual_renewal_required": 26
-            }
+
+            finally:
+                db.close()
             
             logger.info("renewals_tracked", count=len(renewals))
             

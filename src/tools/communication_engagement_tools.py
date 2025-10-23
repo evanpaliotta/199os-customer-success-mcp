@@ -11,7 +11,7 @@ This module provides comprehensive communication and engagement capabilities inc
 - Process 107: Newsletter automation with tracking
 """
 
-from mcp.server.fastmcp import Context
+from fastmcp import Context
 from typing import Dict, List, Any, Optional, Literal
 from datetime import datetime, timedelta
 from enum import Enum
@@ -2215,69 +2215,20 @@ def register_tools(mcp):
                         'error': 'get_ebr_details requires ebr_id'
                     }
 
-                # Mock EBR details
-                ebr_details = {
-                    'ebr_id': ebr_id,
-                    'client_id': 'cs_1696800000_acme',
-                    'client_name': 'Acme Corporation',
-                    'ebr_type': 'quarterly',
-                    'scheduled_date': '2025-10-25T14:00:00Z',
-                    'duration_minutes': 60,
-                    'location': 'Virtual - Zoom',
-
-                    # Participants
-                    'participants': {
-                        'customer_attendees': [
-                            {'name': 'John Smith', 'title': 'CTO'},
-                            {'name': 'Sarah Johnson', 'title': 'VP of Operations'},
-                            {'name': 'Mike Chen', 'title': 'Director of IT'}
-                        ],
-                        'vendor_attendees': [
-                            {'name': 'Emily Davis', 'title': 'Customer Success Manager'},
-                            {'name': 'Robert Taylor', 'title': 'Solutions Architect'},
-                            {'name': 'Lisa Anderson', 'title': 'Account Executive'}
-                        ]
-                    },
-
-                    # Meeting details
-                    'agenda_items': [
-                        'Q3 2025 performance review',
-                        'Product adoption and usage trends',
-                        'Support metrics and satisfaction',
-                        'Q4 roadmap preview',
-                        'Q4 success planning'
-                    ],
-                    'objectives': [
-                        'Demonstrate value delivered in Q3',
-                        'Align on Q4 priorities',
-                        'Identify expansion opportunities',
-                        'Strengthen executive relationships'
-                    ],
-
-                    # Preparation status
-                    'preparation': {
-                        'deck_prepared': True,
-                        'metrics_compiled': True,
-                        'deck_url': f'https://docs.example.com/ebr/{ebr_id}',
-                        'data_as_of': '2025-10-10'
-                    },
-
-                    # Status
-                    'completed': False,
-                    'days_until_meeting': 15,
-                    'status': 'scheduled',
-                    'created_at': '2025-09-25T10:00:00Z'
-                }
-
+                # EBR tracking requires database schema implementation
+                # TODO: Create EBR database table and implement EBR tracking
                 return {
-                    'status': 'success',
-                    'ebr_details': ebr_details,
-                    'readiness': {
-                        'overall_readiness': 'on_track',
-                        'deck_status': 'ready',
-                        'data_status': 'ready',
-                        'action_required': []
-                    }
+                    'status': 'not_implemented',
+                    'error': 'EBR tracking requires database schema implementation',
+                    'message': 'Executive Business Review tracking is not yet implemented. This feature requires a dedicated EBR database table to store meeting records, participants, agendas, and outcomes.',
+                    'required_implementation': [
+                        'Create EBR database schema',
+                        'Implement EBR record storage',
+                        'Add participant tracking',
+                        'Build preparation workflows',
+                        'Create reporting dashboards'
+                    ],
+                    'ebr_id': ebr_id
                 }
 
             # ================================================================
@@ -2290,123 +2241,20 @@ def register_tools(mcp):
                         'error': 'prepare_ebr requires ebr_id'
                     }
 
-                # Generate preparation materials
-                preparation_package = {
-                    'ebr_id': ebr_id,
-                    'client_id': 'cs_1696800000_acme',
-                    'prepared_at': datetime.now().isoformat(),
-
-                    # Success metrics
-                    'success_metrics': {
-                        'health_score': {
-                            'current': 82,
-                            'previous_quarter': 78,
-                            'change': '+4 points',
-                            'trend': 'improving'
-                        },
-                        'product_adoption': {
-                            'features_adopted': 18,
-                            'features_available': 25,
-                            'adoption_rate': 0.72,
-                            'change_from_last_quarter': '+8%'
-                        },
-                        'user_engagement': {
-                            'weekly_active_users': 45,
-                            'monthly_active_users': 68,
-                            'activation_rate': 0.91,
-                            'session_duration_avg': 42
-                        },
-                        'support_quality': {
-                            'tickets_this_quarter': 24,
-                            'avg_resolution_time': '4.2 hours',
-                            'satisfaction_score': 4.6,
-                            'ticket_trend': 'decreasing'
-                        },
-                        'business_outcomes': {
-                            'time_saved_hours': 1250,
-                            'cost_savings': 85000,
-                            'efficiency_improvement': 0.34,
-                            'roi': 3.2
-                        }
-                    },
-
-                    # Key achievements
-                    'achievements': [
-                        'Completed onboarding 3 days ahead of schedule',
-                        'Achieved 91% user activation rate (target: 85%)',
-                        'Integrated with 3 key systems (Salesforce, Slack, Jira)',
-                        'Reduced support tickets by 18% quarter-over-quarter',
-                        'Implemented advanced analytics dashboard'
-                    ],
-
-                    # Opportunities
-                    'opportunities': [
-                        {
-                            'type': 'expansion',
-                            'description': 'Add 20 user licenses',
-                            'potential_arr': 9600,
-                            'confidence': 'high'
-                        },
-                        {
-                            'type': 'upsell',
-                            'description': 'Premium features tier',
-                            'potential_arr': 12000,
-                            'confidence': 'medium'
-                        }
-                    ],
-
-                    # Roadmap preview
-                    'upcoming_features': [
-                        {
-                            'feature': 'Advanced AI Assistant',
-                            'release_date': 'Q1 2026',
-                            'relevance': 'high'
-                        },
-                        {
-                            'feature': 'Mobile App Launch',
-                            'release_date': 'Q1 2026',
-                            'relevance': 'medium'
-                        },
-                        {
-                            'feature': 'Enhanced Reporting Suite',
-                            'release_date': 'Q4 2025',
-                            'relevance': 'high'
-                        }
-                    ],
-
-                    # Presentation deck
-                    'deck': {
-                        'deck_url': f'https://docs.example.com/ebr/{ebr_id}/deck',
-                        'slide_count': 24,
-                        'sections': [
-                            'Executive Summary',
-                            'Q3 Performance Review',
-                            'Success Metrics Dashboard',
-                            'Product Adoption Analysis',
-                            'Support & Success',
-                            'ROI & Value Realization',
-                            'Customer Testimonial',
-                            'Roadmap Preview',
-                            'Q4 Success Plan',
-                            'Questions & Discussion'
-                        ]
-                    }
-                }
-
-                logger.info("ebr_materials_prepared", ebr_id=ebr_id)
-
+                # EBR preparation requires database schema implementation
+                # TODO: Create EBR database table and implement EBR preparation workflows
                 return {
-                    'status': 'success',
-                    'message': 'EBR preparation materials generated successfully',
-                    'preparation_package': preparation_package,
-                    'presentation_ready': True,
-                    'next_steps': [
-                        'Review presentation deck with internal team',
-                        'Customize slides for customer-specific context',
-                        'Send pre-read materials to customer 3 days before',
-                        'Conduct internal dry run 2 days before',
-                        'Prepare backup materials and FAQs'
-                    ]
+                    'status': 'not_implemented',
+                    'error': 'EBR preparation requires database schema implementation',
+                    'message': 'Executive Business Review preparation is not yet implemented. This feature requires database integration to fetch customer metrics, usage data, and success indicators.',
+                    'required_implementation': [
+                        'Create EBR database schema',
+                        'Implement metrics compilation from customer data',
+                        'Build presentation deck generation',
+                        'Add achievement tracking',
+                        'Create opportunity identification'
+                    ],
+                    'ebr_id': ebr_id
                 }
 
             # ================================================================
@@ -2425,107 +2273,42 @@ def register_tools(mcp):
                         'error': 'satisfaction_rating must be between 1 and 5'
                     }
 
-                # Validate next EBR date if provided
-                next_ebr_dt = None
-                if next_ebr_date:
-                    try:
-                        next_ebr_dt = datetime.fromisoformat(next_ebr_date.replace('Z', '+00:00'))
-                        if next_ebr_dt < datetime.now():
-                            return {
-                                'status': 'failed',
-                                'error': 'next_ebr_date must be in the future'
-                            }
-                    except ValueError:
-                        return {
-                            'status': 'failed',
-                            'error': 'next_ebr_date must be in ISO format'
-                        }
-
-                completion = {
-                    'ebr_id': ebr_id,
-                    'completed': True,
-                    'completion_date': datetime.now().isoformat(),
-                    'satisfaction_rating': satisfaction_rating,
-                    'satisfaction_level': ['very_poor', 'poor', 'average', 'good', 'excellent'][satisfaction_rating - 1],
-                    'action_items': action_items or [],
-                    'next_ebr_scheduled': next_ebr_dt.isoformat() if next_ebr_dt else None
-                }
-
-                logger.info(
-                    "ebr_completed",
-                    ebr_id=ebr_id,
-                    satisfaction_rating=satisfaction_rating
-                )
-
+                # EBR completion requires database schema implementation
+                # TODO: Create EBR database table to store completion records
                 return {
-                    'status': 'success',
-                    'message': 'EBR marked as completed successfully',
-                    'completion': completion,
-                    'follow_up': {
-                        'thank_you_email': 'Scheduled to send within 24 hours',
-                        'action_items_tracked': len(action_items or []),
-                        'next_ebr_date': next_ebr_dt.isoformat() if next_ebr_dt else 'Not scheduled yet',
-                        'recording_url': f'https://recordings.example.com/ebr/{ebr_id}'
-                    },
-                    'next_steps': [
-                        'Send follow-up email with summary and recording',
-                        'Create tasks for all action items',
-                        'Update customer health score based on feedback',
-                        'Schedule next EBR if not already done',
-                        'Share internal debrief with CS team',
-                        'Update CRM with meeting notes and outcomes'
-                    ]
+                    'status': 'not_implemented',
+                    'error': 'EBR completion tracking requires database schema implementation',
+                    'message': 'Executive Business Review completion tracking is not yet implemented. This feature requires database integration to store completion records, satisfaction ratings, and follow-up actions.',
+                    'required_implementation': [
+                        'Create EBR database schema',
+                        'Implement completion record storage',
+                        'Add action item tracking',
+                        'Build follow-up automation',
+                        'Create completion analytics'
+                    ],
+                    'ebr_id': ebr_id,
+                    'satisfaction_rating': satisfaction_rating
                 }
 
             # ================================================================
             # LIST UPCOMING EBRs
             # ================================================================
             elif action == "list_upcoming_ebrs":
-                upcoming_ebrs = [
-                    {
-                        'ebr_id': 'ebr_001',
-                        'client_id': 'cs_1696800000_acme',
-                        'client_name': 'Acme Corporation',
-                        'ebr_type': 'quarterly',
-                        'scheduled_date': '2025-10-25T14:00:00Z',
-                        'days_until': 15,
-                        'preparation_status': 'on_track'
-                    },
-                    {
-                        'ebr_id': 'ebr_002',
-                        'client_id': 'cs_1696800100_techco',
-                        'client_name': 'TechCo Industries',
-                        'ebr_type': 'renewal',
-                        'scheduled_date': '2025-11-05T10:00:00Z',
-                        'days_until': 26,
-                        'preparation_status': 'needs_attention'
-                    },
-                    {
-                        'ebr_id': 'ebr_003',
-                        'client_id': 'cs_1696800200_startup',
-                        'client_name': 'StartupXYZ',
-                        'ebr_type': 'quarterly',
-                        'scheduled_date': '2025-11-12T15:00:00Z',
-                        'days_until': 33,
-                        'preparation_status': 'not_started'
-                    }
-                ]
-
+                # EBR listing requires database schema implementation
+                # TODO: Create EBR database table and implement EBR listing
                 return {
-                    'status': 'success',
-                    'upcoming_ebrs': upcoming_ebrs,
-                    'total_upcoming': len(upcoming_ebrs),
-                    'summary': {
-                        'next_7_days': 0,
-                        'next_30_days': 2,
-                        'next_90_days': 3,
-                        'overdue_prep': 1
-                    },
-                    'recommendations': [
-                        'Prioritize preparation for TechCo renewal EBR',
-                        'Begin prep for StartupXYZ EBR (33 days out)',
-                        'Review and update metrics for all upcoming EBRs'
-                    ]
+                    'status': 'not_implemented',
+                    'error': 'EBR listing requires database schema implementation',
+                    'message': 'Executive Business Review listing is not yet implemented. This feature requires a dedicated EBR database table to store and query scheduled meetings.',
+                    'required_implementation': [
+                        'Create EBR database schema',
+                        'Implement EBR record storage',
+                        'Add scheduling and calendar integration',
+                        'Build preparation status tracking',
+                        'Create EBR dashboard and reporting'
+                    ],
+                    'upcoming_ebrs': [],
+                    'total_upcoming': 0
                 }
 
             else:
