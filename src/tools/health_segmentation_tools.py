@@ -3,7 +3,7 @@ Health & Segmentation Tools
 MCP tools for customer health monitoring, scoring, and segmentation functionality
 """
 
-from mcp.server.fastmcp import Context
+from fastmcp import Context
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta, date
 from pydantic import BaseModel, Field

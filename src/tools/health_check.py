@@ -10,7 +10,7 @@ from typing import Dict, Any, List
 from datetime import datetime
 import structlog
 
-from mcp.server.fastmcp import FastMCP, Context
+from fastmcp import FastMCP, Context
 
 # Initialize logger
 logger = structlog.get_logger(__name__)

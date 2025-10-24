@@ -7,7 +7,7 @@ for the Customer Success MCP Server, enabling structured customer activation
 and education through the entire onboarding lifecycle.
 """
 
-from mcp.server.fastmcp import Context
+from fastmcp import Context
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
 from src.models.onboarding_models import (

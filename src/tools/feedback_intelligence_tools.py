@@ -4,7 +4,7 @@ Comprehensive feedback collection, sentiment analysis, and Voice of Customer (Vo
 for Processes 122-127
 """
 
-from mcp.server.fastmcp import Context
+from fastmcp import Context
 from typing import Dict, List, Any, Optional, Literal
 from datetime import datetime, date, timedelta
 from src.security.input_validation import (

@@ -3,7 +3,7 @@ Retention & Risk Management Tools
 Processes 95-101: Churn prevention, risk scoring, and retention campaigns
 """
 
-from mcp.server.fastmcp import Context
+from fastmcp import Context
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
 from src.security.input_validation import validate_client_id, ValidationError

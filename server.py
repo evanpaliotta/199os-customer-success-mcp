@@ -19,7 +19,8 @@ from src.initialization import initialize_all
 load_dotenv()
 
 # Initialize entire system (logging, MCP server, agents, tools)
-mcp, adaptive_agent, enhanced_agent, logger = initialize_all()
+# Skip validation for MCP testing (no database required)
+mcp, adaptive_agent, enhanced_agent, logger = initialize_all(skip_validation=True)
 
 # Main entry point
 if __name__ == "__main__":

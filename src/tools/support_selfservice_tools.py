@@ -4,7 +4,7 @@ Comprehensive ticket handling, knowledge base management, and support analytics
 Processes 108-113
 """
 
-from mcp.server.fastmcp import Context
+from fastmcp import Context
 from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime, timedelta
 from collections import defaultdict

@@ -26,7 +26,7 @@ import structlog
 from src.utils.file_operations import SafeFileOperations
 
 # Import MCP Orchestrator for MCP server integration
-from src.mcp.orchestrator import MCPOrchestrator, MCPToolCall
+from src.services.orchestrator import MCPOrchestrator, MCPToolCall
 
 # Import real integrations
 from src.integrations import (
