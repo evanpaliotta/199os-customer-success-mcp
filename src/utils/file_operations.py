@@ -68,3 +68,44 @@ class SafeFileOperations:
             return True
         except Exception:
             return False
+
+    @staticmethod
+    def read_json(file_path: Path) -> Optional[dict]:
+        """
+        Safely read and parse a JSON file.
+
+        Args:
+            file_path: Path to the JSON file to read
+
+        Returns:
+            Parsed JSON as dict, or None if file doesn't exist or parsing fails
+        """
+        import json
+        try:
+            if file_path.exists():
+                content = file_path.read_text()
+                return json.loads(content)
+            return None
+        except (json.JSONDecodeError, Exception):
+            return None
+
+    @staticmethod
+    def write_json(file_path: Path, data: dict) -> bool:
+        """
+        Safely write data to a JSON file.
+
+        Args:
+            file_path: Path to the JSON file to write
+            data: Dictionary data to write as JSON
+
+        Returns:
+            True if successful, False otherwise
+        """
+        import json
+        try:
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            content = json.dumps(data, indent=2)
+            file_path.write_text(content)
+            return True
+        except Exception:
+            return False
