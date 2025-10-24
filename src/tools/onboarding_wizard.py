@@ -60,11 +60,18 @@ class WizardStep(Enum):
     COMPLETION = 8
 
 
+class WizardMode(Enum):
+    """Wizard interaction modes"""
+    INTERACTIVE = "interactive"
+    BATCH = "batch"
+
+
 @dataclass
 class OnboardingState:
     """Tracks wizard progress and configuration"""
     current_step: WizardStep = WizardStep.WELCOME
     completed_steps: List[WizardStep] = None
+    mode: Optional[WizardMode] = None
 
     # System check results
     python_version: Optional[str] = None
@@ -121,6 +128,8 @@ class OnboardingState:
         data = asdict(self)
         data['current_step'] = self.current_step.name
         data['completed_steps'] = [step.name for step in self.completed_steps]
+        if self.mode:
+            data['mode'] = self.mode.value
         return data
 
     @classmethod
@@ -134,6 +143,8 @@ class OnboardingState:
                 WizardStep[step] if isinstance(step, str) else step
                 for step in data['completed_steps']
             ]
+        if 'mode' in data and isinstance(data['mode'], str):
+            data['mode'] = WizardMode(data['mode'])
         return cls(**data)
 
 
@@ -202,6 +213,550 @@ class CustomerSuccessOnboardingWizard:
 
         self.console.print(f"[cyan]Progress:[/cyan] {progress_bar} [cyan]{completed}/{total_steps} steps ({percentage:.0f}%)[/cyan]")
         self.console.print()
+
+    def select_mode(self) -> Optional[WizardMode]:
+        """Prompt user to select between interactive and batch mode"""
+        # If mode already set (resuming), return it
+        if self.state.mode:
+            return self.state.mode
+
+        self.clear_screen()
+        self.print_header(
+            "🎯 Choose Your Setup Experience",
+            "Select how you'd like to configure Customer Success MCP"
+        )
+
+        # Create mode comparison table
+        comparison = Table(show_header=True, header_style="bold cyan", box=box.ROUNDED)
+        comparison.add_column("Feature", style="white", width=30)
+        comparison.add_column("Interactive Mode", style="green", width=35)
+        comparison.add_column("Batch Mode", style="yellow", width=35)
+
+        comparison.add_row(
+            "Setup Style",
+            "Step-by-step guided setup",
+            "All-at-once configuration"
+        )
+        comparison.add_row(
+            "Time Required",
+            "10-15 minutes",
+            "5-8 minutes"
+        )
+        comparison.add_row(
+            "Best For",
+            "First-time setup\nWant guidance and explanations",
+            "Quick setup\nKnow your requirements"
+        )
+        comparison.add_row(
+            "Validation",
+            "Immediate per-step validation",
+            "Final validation before save"
+        )
+        comparison.add_row(
+            "Recovery",
+            "Can resume from any step",
+            "Can retry entire batch"
+        )
+
+        self.console.print(comparison)
+        self.console.print()
+
+        # Mode selection
+        self.console.print("[bold]Mode Options:[/bold]")
+        self.console.print("  [green]1.[/green] Interactive Mode - Step-by-step guided setup")
+        self.console.print("  [yellow]2.[/yellow] Batch Mode - Configure everything at once")
+        self.console.print()
+
+        choice = Prompt.ask(
+            "Select mode",
+            choices=["1", "2", "interactive", "batch"],
+            default="1"
+        )
+
+        # Map choice to mode
+        if choice in ["1", "interactive"]:
+            selected_mode = WizardMode.INTERACTIVE
+            self.console.print("\n[green]✓ Interactive Mode selected[/green]")
+        else:
+            selected_mode = WizardMode.BATCH
+            self.console.print("\n[yellow]✓ Batch Mode selected[/yellow]")
+
+        # Save mode to state
+        self.state.mode = selected_mode
+        self.save_state()
+
+        # Brief pause to show selection
+        import time
+        time.sleep(1)
+
+        return selected_mode
+
+    # ========================================================================
+    # BATCH MODE IMPLEMENTATION
+    # ========================================================================
+
+    def run_batch_mode(self) -> bool:
+        """Execute batch mode - collect all configuration at once"""
+        self.clear_screen()
+        self.print_header(
+            "🚀 Batch Mode Configuration",
+            "Configure everything in one go"
+        )
+
+        self.console.print("[bold]In batch mode, you'll provide all configuration upfront:[/bold]")
+        self.console.print("  • Security credentials (encryption, JWT, Redis)")
+        self.console.print("  • Platform integrations (select which ones to configure)")
+        self.console.print("  • Health score weights and thresholds")
+        self.console.print("  • SLA targets")
+        self.console.print("  • Database configuration")
+        self.console.print()
+        self.console.print("[yellow]Note:[/yellow] You'll review everything before it's applied")
+        self.console.print()
+
+        if not Confirm.ask("Ready to start batch configuration?", default=True):
+            return False
+
+        # Collect all configuration sections
+        try:
+            # Section 1: Security
+            self.console.print("\n[bold cyan]═══ Security Configuration ═══[/bold cyan]")
+            security_config = self._collect_batch_security()
+            if not security_config:
+                return False
+
+            # Section 2: Platform integrations
+            self.console.print("\n[bold cyan]═══ Platform Integrations ═══[/bold cyan]")
+            platform_config = self._collect_batch_platforms()
+
+            # Section 3: Health scoring & SLAs
+            self.console.print("\n[bold cyan]═══ Customer Success Configuration ═══[/bold cyan]")
+            cs_config = self._collect_batch_cs_config()
+            if not cs_config:
+                return False
+
+            # Section 4: Database
+            self.console.print("\n[bold cyan]═══ Database Configuration ═══[/bold cyan]")
+            database_config = self._collect_batch_database()
+            if not database_config:
+                return False
+
+            # Show comprehensive summary
+            if not self._show_batch_summary(security_config, platform_config, cs_config, database_config):
+                return False
+
+            # Apply all configuration
+            self.console.print("\n[bold green]Applying configuration...[/bold green]")
+
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                console=self.console
+            ) as progress:
+                task = progress.add_task("Configuring security...", total=None)
+                self._apply_security_config(security_config)
+                progress.update(task, completed=True)
+
+                task = progress.add_task("Configuring platforms...", total=None)
+                self._apply_platform_config(platform_config)
+                progress.update(task, completed=True)
+
+                task = progress.add_task("Configuring CS parameters...", total=None)
+                self._apply_cs_config(cs_config)
+                progress.update(task, completed=True)
+
+                task = progress.add_task("Initializing database...", total=None)
+                db_success = self._apply_database_config(database_config)
+                progress.update(task, completed=True)
+
+            if not db_success:
+                self.console.print("[yellow]Database initialization had warnings, but continuing...[/yellow]")
+
+            # Mark all steps complete
+            for step in [WizardStep.SECURITY_SETUP, WizardStep.PLATFORM_SETUP,
+                        WizardStep.CONFIGURATION, WizardStep.DATABASE_INIT]:
+                self.state.mark_step_complete(step)
+
+            self.save_state()
+
+            # Show completion
+            self.console.print("\n[bold green]✓ All configuration applied successfully![/bold green]")
+            self.console.print()
+            input("Press Enter to see completion summary...")
+
+            return self.step_completion()
+
+        except KeyboardInterrupt:
+            self.console.print("\n[yellow]Batch configuration cancelled.[/yellow]")
+            return False
+        except Exception as e:
+            self.console.print(f"\n[red]Error during batch configuration: {e}[/red]")
+            import traceback
+            traceback.print_exc()
+            return False
+
+    def _collect_batch_security(self) -> Dict[str, Any]:
+        """Collect all security configuration in one go"""
+        config = {}
+
+        # Encryption key
+        self.console.print("[cyan]1. Encryption Key[/cyan]")
+        if Confirm.ask("Auto-generate encryption key?", default=True):
+            from cryptography.fernet import Fernet
+            config['encryption_key'] = Fernet.generate_key().decode()
+            self.console.print(f"[green]Generated: {config['encryption_key'][:16]}...[/green]")
+        else:
+            config['encryption_key'] = Prompt.ask("Enter encryption key (44 characters)")
+
+        # JWT secret
+        self.console.print("\n[cyan]2. JWT Secret[/cyan]")
+        if Confirm.ask("Auto-generate JWT secret?", default=True):
+            import secrets
+            config['jwt_secret'] = secrets.token_urlsafe(48)
+            self.console.print(f"[green]Generated: {config['jwt_secret'][:16]}...[/green]")
+        else:
+            config['jwt_secret'] = Prompt.ask("Enter JWT secret (min 32 characters)")
+
+        # Master password
+        self.console.print("\n[cyan]3. Master Password[/cyan]")
+        master_password = Prompt.ask("Enter master password (min 16 characters)", password=True)
+        confirm_password = Prompt.ask("Confirm master password", password=True)
+        if master_password != confirm_password:
+            self.console.print("[red]Passwords do not match![/red]")
+            return None
+        if len(master_password) < 16:
+            self.console.print("[red]Master password must be at least 16 characters[/red]")
+            return None
+        config['master_password'] = master_password
+
+        # Redis
+        self.console.print("\n[cyan]4. Redis Configuration[/cyan]")
+        if Confirm.ask("Use default Redis (redis://localhost:6379/0)?", default=True):
+            config['redis_url'] = "redis://localhost:6379/0"
+        else:
+            host = Prompt.ask("Redis host", default="localhost")
+            port = Prompt.ask("Redis port", default="6379")
+            database = Prompt.ask("Redis database", default="0")
+            redis_password = Prompt.ask("Redis password (optional)", default="", password=True)
+            if redis_password:
+                config['redis_url'] = f"redis://:{redis_password}@{host}:{port}/{database}"
+                config['redis_password'] = redis_password
+            else:
+                config['redis_url'] = f"redis://{host}:{port}/{database}"
+
+        return config
+
+    def _collect_batch_platforms(self) -> Dict[str, Any]:
+        """Collect platform integration selections"""
+        self.console.print("Select which platforms to configure:")
+        self.console.print("[dim]You'll provide credentials for selected platforms[/dim]\n")
+
+        platforms = {
+            "zendesk": "Zendesk (Support ticket management)",
+            "intercom": "Intercom (Customer messaging)",
+            "mixpanel": "Mixpanel (Product analytics)",
+            "sendgrid": "SendGrid (Email delivery)",
+            "gainsight": "Gainsight (CS platform)",
+            "amplitude": "Amplitude (Product analytics)",
+            "salesforce": "Salesforce (CRM)",
+            "hubspot": "HubSpot (Marketing/Sales)",
+            "slack": "Slack (Team communication)",
+            "typeform": "Typeform (Survey platform)",
+            "freshdesk": "Freshdesk (Support platform)"
+        }
+
+        selected = {}
+
+        for platform_key, description in platforms.items():
+            if Confirm.ask(f"Configure {description}?", default=False):
+                credentials = self._collect_platform_credentials(platform_key)
+                if credentials:
+                    selected[platform_key] = credentials
+
+        return selected
+
+    def _collect_platform_credentials(self, platform: str) -> Optional[Dict[str, str]]:
+        """Collect credentials for a specific platform"""
+        credentials = {}
+
+        if platform == "zendesk":
+            credentials['subdomain'] = Prompt.ask("Zendesk subdomain")
+            credentials['email'] = Prompt.ask("Zendesk admin email")
+            credentials['api_token'] = Prompt.ask("Zendesk API token", password=True)
+
+        elif platform == "intercom":
+            credentials['access_token'] = Prompt.ask("Intercom access token", password=True)
+
+        elif platform == "mixpanel":
+            credentials['project_token'] = Prompt.ask("Mixpanel project token")
+            credentials['api_secret'] = Prompt.ask("Mixpanel API secret", password=True)
+
+        elif platform == "sendgrid":
+            credentials['api_key'] = Prompt.ask("SendGrid API key", password=True)
+
+        elif platform == "gainsight":
+            credentials['api_key'] = Prompt.ask("Gainsight API key", password=True)
+            credentials['domain'] = Prompt.ask("Gainsight domain")
+
+        elif platform == "amplitude":
+            credentials['api_key'] = Prompt.ask("Amplitude API key")
+            credentials['secret_key'] = Prompt.ask("Amplitude secret key", password=True)
+
+        elif platform == "salesforce":
+            credentials['username'] = Prompt.ask("Salesforce username")
+            credentials['password'] = Prompt.ask("Salesforce password", password=True)
+            credentials['security_token'] = Prompt.ask("Salesforce security token", password=True)
+
+        elif platform == "hubspot":
+            credentials['api_key'] = Prompt.ask("HubSpot API key", password=True)
+
+        elif platform == "slack":
+            credentials['bot_token'] = Prompt.ask("Slack bot token", password=True)
+            credentials['signing_secret'] = Prompt.ask("Slack signing secret", password=True)
+
+        elif platform == "typeform":
+            credentials['access_token'] = Prompt.ask("Typeform access token", password=True)
+
+        elif platform == "freshdesk":
+            credentials['api_key'] = Prompt.ask("Freshdesk API key", password=True)
+            credentials['domain'] = Prompt.ask("Freshdesk domain")
+
+        return credentials if credentials else None
+
+    def _collect_batch_cs_config(self) -> Dict[str, Any]:
+        """Collect customer success configuration (health scores, SLAs)"""
+        config = {}
+
+        # Health score weights
+        self.console.print("[cyan]1. Health Score Weights[/cyan]")
+        if Confirm.ask("Use default weights? (Usage: 35%, Engagement: 25%, Support: 15%, Satisfaction: 15%, Payment: 10%)", default=True):
+            config['weights'] = {
+                'usage': 0.35,
+                'engagement': 0.25,
+                'support': 0.15,
+                'satisfaction': 0.15,
+                'payment': 0.10
+            }
+        else:
+            config['weights'] = {
+                'usage': float(Prompt.ask("Usage weight (0-1)", default="0.35")),
+                'engagement': float(Prompt.ask("Engagement weight (0-1)", default="0.25")),
+                'support': float(Prompt.ask("Support weight (0-1)", default="0.15")),
+                'satisfaction': float(Prompt.ask("Satisfaction weight (0-1)", default="0.15")),
+                'payment': float(Prompt.ask("Payment weight (0-1)", default="0.10"))
+            }
+
+        # Health thresholds
+        self.console.print("\n[cyan]2. Health Score Thresholds[/cyan]")
+        if Confirm.ask("Use default thresholds? (At-Risk: <60, Healthy: >75)", default=True):
+            config['thresholds'] = {
+                'churn_risk': 40.0,
+                'at_risk': 60.0,
+                'healthy': 75.0,
+                'champion': 90.0
+            }
+        else:
+            config['thresholds'] = {
+                'churn_risk': float(Prompt.ask("Churn risk threshold (0-100)", default="40")),
+                'at_risk': float(Prompt.ask("At-risk threshold (0-100)", default="60")),
+                'healthy': float(Prompt.ask("Healthy threshold (0-100)", default="75")),
+                'champion': float(Prompt.ask("Champion threshold (0-100)", default="90"))
+            }
+
+        # SLA targets
+        self.console.print("\n[cyan]3. Support SLA Targets[/cyan]")
+        if Confirm.ask("Use default SLAs? (P1: 4h, P2: 8h, P3: 24h)", default=True):
+            config['slas'] = {
+                'first_response_minutes': 15,
+                'p1_resolution_minutes': 240,
+                'p2_resolution_minutes': 480,
+                'p3_resolution_minutes': 1440
+            }
+        else:
+            config['slas'] = {
+                'first_response_minutes': int(Prompt.ask("First response time (minutes)", default="15")),
+                'p1_resolution_minutes': int(Prompt.ask("P1 resolution time (minutes)", default="240")),
+                'p2_resolution_minutes': int(Prompt.ask("P2 resolution time (minutes)", default="480")),
+                'p3_resolution_minutes': int(Prompt.ask("P3 resolution time (minutes)", default="1440"))
+            }
+
+        return config
+
+    def _collect_batch_database(self) -> Dict[str, Any]:
+        """Collect database configuration"""
+        config = {}
+
+        self.console.print("Configure PostgreSQL database connection:")
+
+        use_default = Confirm.ask("Use default database? (localhost:5432/cs_mcp_db)", default=True)
+
+        if use_default:
+            config['host'] = "localhost"
+            config['port'] = "5432"
+            config['user'] = "postgres"
+            config['password'] = Prompt.ask("PostgreSQL password", password=True)
+            config['database'] = "cs_mcp_db"
+        else:
+            config['host'] = Prompt.ask("PostgreSQL host", default="localhost")
+            config['port'] = Prompt.ask("PostgreSQL port", default="5432")
+            config['user'] = Prompt.ask("PostgreSQL user", default="postgres")
+            config['password'] = Prompt.ask("PostgreSQL password", password=True)
+            config['database'] = Prompt.ask("Database name", default="cs_mcp_db")
+
+        config['run_migrations'] = Confirm.ask("Run Alembic migrations automatically?", default=True)
+        config['create_defaults'] = Confirm.ask("Create default customer segments?", default=True)
+
+        return config
+
+    def _show_batch_summary(self, security: Dict, platforms: Dict, cs_config: Dict, database: Dict) -> bool:
+        """Show comprehensive summary and get confirmation"""
+        self.clear_screen()
+        self.print_header("📋 Configuration Summary", "Please review before applying")
+
+        # Security summary
+        summary_table = Table(show_header=False, box=box.ROUNDED)
+        summary_table.add_column("Item", style="cyan")
+        summary_table.add_column("Value", style="white")
+
+        summary_table.add_row("[bold]Security Configuration[/bold]", "")
+        summary_table.add_row("  Encryption Key", f"{security.get('encryption_key', '')[:20]}...")
+        summary_table.add_row("  JWT Secret", f"{security.get('jwt_secret', '')[:20]}...")
+        summary_table.add_row("  Master Password", "***configured***")
+        summary_table.add_row("  Redis URL", security.get('redis_url', ''))
+        summary_table.add_row("", "")
+
+        # Platforms summary
+        summary_table.add_row("[bold]Platform Integrations[/bold]", "")
+        if platforms:
+            for platform in platforms.keys():
+                summary_table.add_row(f"  {platform.capitalize()}", "✓ Configured")
+        else:
+            summary_table.add_row("  No platforms", "Skipped")
+        summary_table.add_row("", "")
+
+        # CS config summary
+        summary_table.add_row("[bold]Customer Success Config[/bold]", "")
+        weights = cs_config.get('weights', {})
+        summary_table.add_row("  Health Weights", f"Usage: {weights.get('usage', 0):.0%}, Engagement: {weights.get('engagement', 0):.0%}")
+        thresholds = cs_config.get('thresholds', {})
+        summary_table.add_row("  Thresholds", f"At-Risk: <{thresholds.get('at_risk', 0)}, Healthy: >{thresholds.get('healthy', 0)}")
+        slas = cs_config.get('slas', {})
+        summary_table.add_row("  SLA Targets", f"P1: {slas.get('p1_resolution_minutes', 0)//60}h, P2: {slas.get('p2_resolution_minutes', 0)//60}h")
+        summary_table.add_row("", "")
+
+        # Database summary
+        summary_table.add_row("[bold]Database Configuration[/bold]", "")
+        summary_table.add_row("  Connection", f"{database['host']}:{database['port']}/{database['database']}")
+        summary_table.add_row("  Run Migrations", "Yes" if database.get('run_migrations') else "No")
+        summary_table.add_row("  Create Defaults", "Yes" if database.get('create_defaults') else "No")
+
+        self.console.print(summary_table)
+        self.console.print()
+
+        return Confirm.ask("[bold]Apply this configuration?[/bold]", default=True)
+
+    def _apply_security_config(self, config: Dict[str, Any]):
+        """Apply security configuration to .env and state"""
+        self._update_env_file('ENCRYPTION_KEY', config['encryption_key'])
+        self._update_env_file('JWT_SECRET', config['jwt_secret'])
+        self._update_env_file('MASTER_PASSWORD', config['master_password'])
+        self._update_env_file('REDIS_URL', config['redis_url'])
+        if 'redis_password' in config:
+            self._update_env_file('REDIS_PASSWORD', config['redis_password'])
+
+        # Update environment for this session
+        os.environ['MASTER_PASSWORD'] = config['master_password']
+        os.environ['ENCRYPTION_KEY'] = config['encryption_key']
+
+    def _apply_platform_config(self, platforms: Dict[str, Dict[str, str]]):
+        """Apply platform integration credentials"""
+        # Initialize credential manager
+        if SecureCredentialManager:
+            self.credential_manager = SecureCredentialManager(self.config_dir)
+
+        for platform, credentials in platforms.items():
+            # Save to .env
+            for key, value in credentials.items():
+                env_key = f"{platform.upper()}_{key.upper()}"
+                self._update_env_file(env_key, value)
+
+            # Save to secure credential manager
+            if self.credential_manager:
+                try:
+                    for key, value in credentials.items():
+                        self.credential_manager.store_credential('system', platform, key, value)
+                except Exception as e:
+                    self.console.print(f"[yellow]Warning: Could not encrypt {platform} credentials: {e}[/yellow]")
+
+            # Update state
+            setattr(self.state, f"{platform}_configured", True)
+
+    def _apply_cs_config(self, config: Dict[str, Any]):
+        """Apply customer success configuration"""
+        # Save weights
+        for factor, weight in config['weights'].items():
+            self._update_env_file(f'HEALTH_SCORE_WEIGHT_{factor.upper()}', str(weight))
+        self.state.health_score_weights = config['weights']
+
+        # Save thresholds
+        self._update_env_file('HEALTH_SCORE_AT_RISK_THRESHOLD', str(int(config['thresholds']['at_risk'])))
+        self._update_env_file('HEALTH_SCORE_HEALTHY_THRESHOLD', str(int(config['thresholds']['healthy'])))
+        self._update_env_file('HEALTH_SCORE_CHAMPION_THRESHOLD', str(int(config['thresholds']['champion'])))
+        self._update_env_file('CHURN_PROBABILITY_HIGH_RISK', '0.70')
+        self.state.thresholds = config['thresholds']
+
+        # Save SLAs
+        self._update_env_file('SUPPORT_FIRST_RESPONSE_SLA', str(config['slas']['first_response_minutes']))
+        self._update_env_file('SUPPORT_P1_RESOLUTION_SLA', str(config['slas']['p1_resolution_minutes']))
+        self._update_env_file('SUPPORT_P2_RESOLUTION_SLA', str(config['slas']['p2_resolution_minutes']))
+        self._update_env_file('SUPPORT_P3_RESOLUTION_SLA', str(config['slas']['p3_resolution_minutes']))
+        self.state.sla_targets = config['slas']
+
+    def _apply_database_config(self, config: Dict[str, Any]) -> bool:
+        """Apply database configuration and optionally run migrations"""
+        # Build database URL
+        database_url = f"postgresql://{config['user']}:{config['password']}@{config['host']}:{config['port']}/{config['database']}"
+        self._update_env_file('DATABASE_URL', database_url)
+        os.environ['DATABASE_URL'] = database_url
+
+        # Test connection
+        try:
+            import psycopg2
+            from urllib.parse import urlparse
+            parsed = urlparse(database_url)
+            conn = psycopg2.connect(
+                host=parsed.hostname,
+                port=parsed.port or 5432,
+                user=parsed.username,
+                password=parsed.password,
+                database=parsed.path.lstrip('/'),
+                connect_timeout=10
+            )
+            conn.close()
+        except Exception as e:
+            self.console.print(f"[red]Database connection test failed: {e}[/red]")
+            return False
+
+        # Run migrations if requested
+        if config.get('run_migrations'):
+            try:
+                import subprocess
+                from pathlib import Path
+                alembic_ini = Path.cwd() / "alembic.ini"
+                if alembic_ini.exists():
+                    result = subprocess.run(
+                        ["alembic", "upgrade", "head"],
+                        capture_output=True,
+                        text=True
+                    )
+                    if result.returncode == 0:
+                        self.state.migrations_run = True
+                    else:
+                        self.console.print(f"[yellow]Migration warning: {result.stderr}[/yellow]")
+            except Exception as e:
+                self.console.print(f"[yellow]Could not run migrations: {e}[/yellow]")
+
+        self.state.database_initialized = True
+        return True
 
     # ========================================================================
     # STEP 1: WELCOME & SYSTEM CHECK
@@ -1494,6 +2049,20 @@ class CustomerSuccessOnboardingWizard:
     def run(self):
         """Run the complete onboarding wizard"""
         try:
+            # Select interaction mode (if not already set)
+            if not self.state.mode:
+                selected_mode = self.select_mode()
+                if not selected_mode:
+                    return
+            else:
+                selected_mode = self.state.mode
+
+            # Handle batch mode
+            if selected_mode == WizardMode.BATCH:
+                self.run_batch_mode()
+                return
+
+            # Continue with interactive mode (existing flow)
             # Step 1: Welcome
             if not self.state.is_step_complete(WizardStep.WELCOME):
                 if not self.step_welcome():
