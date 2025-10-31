@@ -14,7 +14,7 @@ import structlog
 logger = structlog.get_logger(__name__)
 
 
-def register_tools(mcp):
+def register_tools(mcp) -> Any:
     """Register all core system tools with the MCP instance"""
 
     @mcp.tool()
@@ -729,11 +729,11 @@ def register_tools(mcp):
                     'total_arr': total_arr,
                     'total_active_users': total_users,
                     'lifecycle_breakdown': {
-                        'onboarding': len([c for c in filtered_clients if c['lifecycle_stage'] == 'onboarding']),
-                        'active': len([c for c in filtered_clients if c['lifecycle_stage'] == 'active']),
-                        'at_risk': len([c for c in filtered_clients if c['lifecycle_stage'] == 'at_risk']),
-                        'churned': len([c for c in filtered_clients if c['lifecycle_stage'] == 'churned']),
-                        'expansion': len([c for c in filtered_clients if c['lifecycle_stage'] == 'expansion'])
+                        'onboarding': len([c for c in paginated_clients if c['lifecycle_stage'] == 'onboarding']),
+                        'active': len([c for c in paginated_clients if c['lifecycle_stage'] == 'active']),
+                        'at_risk': len([c for c in paginated_clients if c['lifecycle_stage'] == 'at_risk']),
+                        'churned': len([c for c in paginated_clients if c['lifecycle_stage'] == 'churned']),
+                        'expansion': len([c for c in paginated_clients if c['lifecycle_stage'] == 'expansion'])
                     }
                 }
             }

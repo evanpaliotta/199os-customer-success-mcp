@@ -112,7 +112,7 @@ class DataSourceRegistry:
 class DataSourceDiscovery:
     """Runtime discovery and prioritization of available data sources"""
     
-    def __init__(self, config_path: Path):
+    def __init__(self, config_path: Path) -> Any:
         self.config_path = config_path
         self.claude_desktop_config = self._load_claude_desktop_config()
         
@@ -183,7 +183,7 @@ class AgentMemory:
     MAX_PERFORMANCE_RECORDS = 100
     MAX_WORKFLOW_PATTERNS = 20
     
-    def __init__(self, client_id: str, config_path: Path):
+    def __init__(self, client_id: str, config_path: Path) -> Any:
         self.client_id = client_id
         self.config_path = config_path
         self.memory_dir = config_path / "client_configs" / client_id
@@ -202,7 +202,7 @@ class AgentMemory:
         # Update memory with client configuration if available
         self._sync_with_client_config()
     
-    def _create_default_memory(self):
+    def _create_default_memory(self) -> Any:
         """Create default memory structure"""
         default_memory = {
             "version": "1.0",
@@ -234,7 +234,7 @@ class AgentMemory:
 
         logger.info(f"Created default memory for client {self.client_id}")
     
-    def _sync_with_client_config(self):
+    def _sync_with_client_config(self) -> Any:
         """Sync memory preferences with client configuration"""
         try:
             if not self.client_config_file.exists():
@@ -305,7 +305,7 @@ class AgentMemory:
             self._create_default_memory()
             return self.load_memory(force_reload=True)
     
-    def save_memory(self, memory: Dict[str, Any]):
+    def save_memory(self, memory: Dict[str, Any]) -> Any:
         """Atomically save memory with backup"""
         # Update timestamp
         memory["last_updated"] = datetime.now().isoformat()
@@ -367,7 +367,7 @@ class AgentMemory:
         
         return relevant
     
-    def update_learning(self, learning_key: str, user_feedback: str, context: Dict[str, Any]):
+    def update_learning(self, learning_key: str, user_feedback: str, context: Dict[str, Any]) -> Any:
         """Update memory with new learning from user feedback"""
         memory = self.load_memory()
         
@@ -395,7 +395,7 @@ class AgentMemory:
         logger.info(f"Updated learning for key: {learning_key}")
     
     def update_performance(self, data_source: str, success: bool, quality_score: float, 
-                          response_time: float, task_type: str):
+                          response_time: float, task_type: str) -> Any:
         """Update data source performance metrics"""
         memory = self.load_memory()
         
@@ -424,7 +424,7 @@ class AgentMemory:
         
         self.save_memory(memory)
     
-    def record_workflow_pattern(self, process_sequence: List[int]):
+    def record_workflow_pattern(self, process_sequence: List[int]) -> Any:
         """Record a sequence of processes for workflow pattern analysis"""
         if len(process_sequence) < 2:
             return  # Only record meaningful sequences
@@ -708,7 +708,7 @@ class UnifiedDataClient:
     
     def __init__(self, discovery: DataSourceDiscovery, memory: AgentMemory,
                  credential_manager: Optional[CredentialManager] = None,
-                 mcp_orchestrator: Optional[MCPOrchestrator] = None):
+                 mcp_orchestrator: Optional[MCPOrchestrator] = None) -> Any:
         self.discovery = discovery
         self.memory = memory
         self.credential_manager = credential_manager

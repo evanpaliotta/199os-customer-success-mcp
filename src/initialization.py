@@ -371,7 +371,7 @@ def validate_security_configuration() -> Tuple[bool, List[str], List[str]]:
     return success, errors, warnings
 
 
-def setup_logging():
+def setup_logging() -> Any:
     """
     Configure structlog AND standard Python logging to use stderr for MCP compliance.
     MCP tools must return clean JSON on stdout, so all logging goes to stderr.
@@ -402,7 +402,7 @@ def setup_logging():
     return logger
 
 
-def initialize_mcp_server():
+def initialize_mcp_server() -> Any:
     """
     Initialize FastMCP server instance.
 
@@ -413,7 +413,7 @@ def initialize_mcp_server():
     return mcp
 
 
-def initialize_agents(mcp: FastMCP, config_path: Path = None):
+def initialize_agents(mcp: FastMCP, config_path: Path = None) -> Any:
     """
     Initialize both Adaptive Agent System and Enhanced Agent System.
 
@@ -440,7 +440,7 @@ def initialize_agents(mcp: FastMCP, config_path: Path = None):
     return adaptive_agent, enhanced_agent, learning_feedback_tool
 
 
-def register_tools(mcp: FastMCP):
+def register_tools(mcp: FastMCP) -> Any:
     """
     Register all tools from organized tool modules.
 
@@ -451,7 +451,7 @@ def register_tools(mcp: FastMCP):
     register_all_tools(mcp)
 
 
-def validate_python_version():
+def validate_python_version() -> Any:
     """
     Validate Python version meets minimum requirements.
 
@@ -618,7 +618,7 @@ def run_startup_validation(
     return success, len(all_errors), len(all_warnings)
 
 
-def initialize_all(skip_validation: bool = False, strict: bool = False):
+def initialize_all(skip_validation: bool = False, strict: bool = False) -> Any:
     """
     Main initialization function that sets up the entire system.
 

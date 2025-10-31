@@ -85,7 +85,7 @@ class AuditLog:
         description: str,
         metadata: Optional[Dict[str, Any]] = None,
         previous_hash: Optional[str] = None
-    ):
+    ) -> Any:
         """Initialize an audit log entry."""
         self.event_id = self._generate_event_id()
         self.timestamp = datetime.utcnow()
@@ -181,7 +181,7 @@ class AuditLogger:
         log_directory: Path,
         retention_days: int = 2555,  # 7 years for GDPR compliance
         max_file_size_mb: int = 100
-    ):
+    ) -> Any:
         """
         Initialize the audit logger.
 
@@ -492,7 +492,7 @@ class AuditLogger:
         files = list(self.log_directory.glob(pattern))
         return sorted(files)
 
-    def _write_log_entry(self, client_id: str, audit_log: AuditLog):
+    def _write_log_entry(self, client_id: str, audit_log: AuditLog) -> Any:
         """Write a log entry to file."""
         log_file = self._get_log_file_path(client_id)
 
@@ -548,7 +548,7 @@ class AuditLogger:
         return None
 
 
-def test_audit_logger():
+def test_audit_logger() -> Any:
     """Test the audit logging system."""
     import tempfile
     import shutil

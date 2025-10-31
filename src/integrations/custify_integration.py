@@ -68,7 +68,7 @@ class CustifyIntegration(BaseIntegration):
         credentials: Dict[str, str],
         rate_limit_calls: int = 100,
         rate_limit_window: int = 60
-    ):
+    ) -> Any:
         """
         Initialize Custify integration.
 
@@ -769,19 +769,19 @@ class CustifyIntegration(BaseIntegration):
             {'custom_health_score': health_score}
         )
 
-    async def close(self):
+    async def close(self) -> Any:
         """Close HTTP session."""
         if self.session and not self.session.closed:
             await self.session.close()
             logger.info("custify_session_closed")
 
 
-def test_custify_integration():
+def test_custify_integration() -> Any:
     """Test Custify integration (requires credentials)."""
     import asyncio
     import os
 
-    async def run_tests():
+    async def run_tests() -> Any:
         api_key = os.getenv('CUSTIFY_API_KEY')
 
         if not api_key:

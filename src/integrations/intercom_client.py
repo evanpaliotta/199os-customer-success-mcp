@@ -30,14 +30,14 @@ logger = structlog.get_logger(__name__)
 class CircuitBreaker:
     """Circuit breaker to prevent cascading failures"""
 
-    def __init__(self, failure_threshold: int = 5, timeout: int = 60):
+    def __init__(self, failure_threshold: int = 5, timeout: int = 60) -> Any:
         self.failure_threshold = failure_threshold
         self.timeout = timeout
         self.failure_count = 0
         self.last_failure_time = None
         self.state = "closed"  # closed, open, half_open
 
-    def call_failed(self):
+    def call_failed(self) -> Any:
         """Record a failed call"""
         self.failure_count += 1
         self.last_failure_time = time.time()
@@ -50,7 +50,7 @@ class CircuitBreaker:
                 threshold=self.failure_threshold
             )
 
-    def call_succeeded(self):
+    def call_succeeded(self) -> Any:
         """Record a successful call"""
         self.failure_count = 0
         self.state = "closed"
@@ -75,7 +75,7 @@ class CircuitBreaker:
 class IntercomClient:
     """Production-ready Intercom API client"""
 
-    def __init__(self, access_token: Optional[str] = None):
+    def __init__(self, access_token: Optional[str] = None) -> Any:
         """Initialize Intercom client
 
         Args:

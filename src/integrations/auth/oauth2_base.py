@@ -53,7 +53,7 @@ class OAuth2Integration(BaseIntegration):
         rate_limit_calls: int = 100,
         rate_limit_window: int = 60,
         max_retries: int = 3
-    ):
+    ) -> Any:
         """
         Initialize OAuth2 integration.
 
@@ -467,7 +467,7 @@ class OAuth2Integration(BaseIntegration):
                 f"Code exchange failed: {str(e)}"
             )
 
-    async def close(self):
+    async def close(self) -> Any:
         """Close HTTP session."""
         if self.session and not self.session.closed:
             await self.session.close()
@@ -476,12 +476,12 @@ class OAuth2Integration(BaseIntegration):
                 integration=self.integration_name
             )
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> Any:
         """Async context manager entry."""
         await self.authenticate()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> Any:
         """Async context manager exit."""
         await self.close()
         return False

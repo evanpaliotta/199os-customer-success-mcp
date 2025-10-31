@@ -32,7 +32,7 @@ class ConnectionTestResult:
         message: str,
         response_time_ms: float = 0.0,
         metadata: Optional[Dict[str, Any]] = None
-    ):
+    ) -> Any:
         self.success = success
         self.status = status
         self.message = message
@@ -63,7 +63,7 @@ class AuthenticationError(Exception):
 class APIError(Exception):
     """Raised when API request fails."""
 
-    def __init__(self, message: str, status_code: Optional[int] = None):
+    def __init__(self, message: str, status_code: Optional[int] = None) -> Any:
         super().__init__(message)
         self.status_code = status_code
 
@@ -71,21 +71,21 @@ class APIError(Exception):
 class CircuitBreaker:
     """Simple circuit breaker for fault tolerance."""
 
-    def __init__(self, failure_threshold: int = 5, timeout: int = 60):
+    def __init__(self, failure_threshold: int = 5, timeout: int = 60) -> Any:
         self.failure_threshold = failure_threshold
         self.timeout = timeout
         self.failure_count = 0
         self.last_failure_time: Optional[datetime] = None
         self.state = "closed"  # closed, open, half_open
 
-    def _record_success(self, response_time: float):
+    def _record_success(self, response_time: float) -> Any:
         """Record successful request."""
         if self.state == "half_open":
             self.state = "closed"
             self.failure_count = 0
             logger.info("circuit_breaker_closed", message="Service recovered")
 
-    def _record_failure(self, error: Exception):
+    def _record_failure(self, error: Exception) -> Any:
         """Record failed request."""
         self.failure_count += 1
         self.last_failure_time = datetime.utcnow()
@@ -109,7 +109,7 @@ class BaseIntegration(ABC):
         rate_limit_calls: int = 100,
         rate_limit_window: int = 60,
         max_retries: int = 3
-    ):
+    ) -> Any:
         """
         Initialize base integration.
 
@@ -158,7 +158,7 @@ class BaseIntegration(ABC):
         """
         pass
 
-    async def ensure_authenticated(self):
+    async def ensure_authenticated(self) -> Any:
         """Ensure we're authenticated before making requests."""
         if not self._authenticated:
             self._authenticated = await self.authenticate()
@@ -183,7 +183,7 @@ class BaseIntegration(ABC):
             return False, f"Missing required fields: {', '.join(missing)}"
         return True, ""
 
-    async def close(self):
+    async def close(self) -> Any:
         """Close HTTP session and cleanup resources."""
         if self.session and not self.session.closed:
             await self.session.close()

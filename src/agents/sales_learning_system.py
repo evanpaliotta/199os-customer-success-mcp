@@ -119,7 +119,7 @@ class SalesLearningEngine:
     - Rep and client-specific preferences
     """
     
-    def __init__(self, client_id: str, storage_dir: Optional[Path] = None):
+    def __init__(self, client_id: str, storage_dir: Optional[Path] = None) -> Any:
         self.client_id = client_id
         self.storage_dir = storage_dir or Path("client_configs") / client_id
         self.storage_dir.mkdir(parents=True, exist_ok=True)
@@ -138,7 +138,7 @@ class SalesLearningEngine:
         # Load existing data
         self._load_learning_data()
     
-    def _load_learning_data(self):
+    def _load_learning_data(self) -> Any:
         """Load learning data from storage"""
         try:
             # Load outcomes history
@@ -187,14 +187,14 @@ class SalesLearningEngine:
                     )
                     self.learned_patterns[pattern_id] = pattern
             
-            logger.info(f"Loaded learning data for client {self.client_id}",
+            logger.info(event=f"Loaded learning data for client {self.client_id}",
                        outcomes=len(self.outcomes_history),
                        patterns=len(self.learned_patterns))
                        
         except Exception as e:
-            logger.warning(f"Could not load learning data: {e}")
+            logger.warning(event=f"Could not load learning data: {e}")
     
-    def _save_learning_data(self):
+    def _save_learning_data(self) -> Any:
         """Save learning data to storage"""
         try:
             # Save outcomes history (keep recent)
@@ -245,7 +245,7 @@ class SalesLearningEngine:
                 json.dump(patterns_data, f, indent=2)
                 
         except Exception as e:
-            logger.error(f"Could not save learning data: {e}")
+            logger.error(event=f"Could not save learning data: {e}")
     
     async def record_outcome(self, outcome: SalesOutcome) -> str:
         """Record a sales outcome for learning"""
@@ -257,10 +257,10 @@ class SalesLearningEngine:
         # Save data
         self._save_learning_data()
         
-        logger.info(f"Recorded sales outcome {outcome.outcome_id}")
+        logger.info(event=f"Recorded sales outcome {outcome.outcome_id}")
         return outcome.outcome_id
     
-    async def _update_patterns_with_outcome(self, outcome: SalesOutcome):
+    async def _update_patterns_with_outcome(self, outcome: SalesOutcome) -> Any:
         """Update learned patterns with new outcome"""
         # Extract pattern candidates from outcome
         pattern_candidates = self._extract_pattern_candidates(outcome)
@@ -391,7 +391,7 @@ class SalesLearningEngine:
         
         return True
     
-    async def _update_existing_pattern(self, pattern_id: str, outcome: SalesOutcome, candidate: Dict[str, Any]):
+    async def _update_existing_pattern(self, pattern_id: str, outcome: SalesOutcome, candidate: Dict[str, Any]) -> Any:
         """Update an existing learned pattern"""
         pattern = self.learned_patterns[pattern_id]
         
@@ -423,7 +423,7 @@ class SalesLearningEngine:
             pattern.outcomes[outcome_key] = 0
         pattern.outcomes[outcome_key] += 1
     
-    async def _create_new_pattern(self, pattern_id: str, similar_outcomes: List[SalesOutcome], candidate: Dict[str, Any]):
+    async def _create_new_pattern(self, pattern_id: str, similar_outcomes: List[SalesOutcome], candidate: Dict[str, Any]) -> Any:
         """Create a new learned pattern"""
         # Calculate statistics from similar outcomes
         success_outcomes = [o for o in similar_outcomes if o.outcome_type in [OutcomeType.WIN, OutcomeType.PIPELINE]]
@@ -463,7 +463,7 @@ class SalesLearningEngine:
         
         self.learned_patterns[pattern_id] = pattern
         
-        logger.info(f"Created new pattern {pattern_id}",
+        logger.info(event=f"Created new pattern {pattern_id}",
                    sample_size=len(similar_outcomes),
                    success_rate=success_rate)
     
@@ -565,7 +565,7 @@ class StrategyAdapter:
     - Generate new strategy variations
     """
     
-    def __init__(self, learning_engine: SalesLearningEngine):
+    def __init__(self, learning_engine: SalesLearningEngine) -> Any:
         self.learning_engine = learning_engine
         self.strategy_templates = self._initialize_strategy_templates()
         self.adaptation_history: List[Dict[str, Any]] = []
@@ -898,7 +898,7 @@ class PerformanceOptimizer:
     Optimizes team and process performance based on learned patterns
     """
     
-    def __init__(self, learning_engine: SalesLearningEngine, strategy_adapter: StrategyAdapter):
+    def __init__(self, learning_engine: SalesLearningEngine, strategy_adapter: StrategyAdapter) -> Any:
         self.learning_engine = learning_engine
         self.strategy_adapter = strategy_adapter
         self.optimization_history: List[Dict[str, Any]] = []
@@ -1154,7 +1154,7 @@ class ClientPreferenceLearner:
     Learns client-specific preferences and customization patterns
     """
     
-    def __init__(self, client_id: str, storage_dir: Optional[Path] = None):
+    def __init__(self, client_id: str, storage_dir: Optional[Path] = None) -> Any:
         self.client_id = client_id
         self.storage_dir = storage_dir or Path("client_configs") / client_id
         self.storage_dir.mkdir(parents=True, exist_ok=True)
@@ -1167,7 +1167,7 @@ class ClientPreferenceLearner:
         # Load existing data
         self._load_preference_data()
     
-    def _load_preference_data(self):
+    def _load_preference_data(self) -> Any:
         """Load client preference data"""
         try:
             prefs_file = self.storage_dir / "client_preferences.json"
@@ -1178,9 +1178,9 @@ class ClientPreferenceLearner:
                     self.interaction_patterns = data.get("interaction_patterns", [])
                     self.customization_history = data.get("customization_history", [])
         except Exception as e:
-            logger.warning(f"Could not load client preferences: {e}")
+            logger.warning(event=f"Could not load client preferences: {e}")
     
-    def _save_preference_data(self):
+    def _save_preference_data(self) -> Any:
         """Save client preference data"""
         try:
             prefs_file = self.storage_dir / "client_preferences.json"
@@ -1192,10 +1192,10 @@ class ClientPreferenceLearner:
             with open(prefs_file, 'w') as f:
                 json.dump(data, f, indent=2)
         except Exception as e:
-            logger.error(f"Could not save client preferences: {e}")
+            logger.error(event=f"Could not save client preferences: {e}")
     
     async def record_interaction(self, interaction_type: str, context: Dict[str, Any], 
-                               satisfaction_score: Optional[float] = None):
+                               satisfaction_score: Optional[float] = None) -> Any:
         """Record client interaction for preference learning"""
         
         interaction = {
@@ -1213,7 +1213,7 @@ class ClientPreferenceLearner:
         
         self._save_preference_data()
     
-    async def _update_preferences_from_interaction(self, interaction: Dict[str, Any]):
+    async def _update_preferences_from_interaction(self, interaction: Dict[str, Any]) -> Any:
         """Update preferences based on interaction data"""
         
         interaction_type = interaction["interaction_type"]
@@ -1313,7 +1313,7 @@ async def create_sales_learning_system(client_id: str,
     performance_optimizer = PerformanceOptimizer(learning_engine, strategy_adapter)
     client_learner = ClientPreferenceLearner(client_id, storage_dir)
     
-    logger.info(f"Sales learning system created for client {client_id}")
+    logger.info(event=f"Sales learning system created for client {client_id}")
     
     return {
         "learning_engine": learning_engine,

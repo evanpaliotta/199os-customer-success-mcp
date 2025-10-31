@@ -35,7 +35,7 @@ logger = structlog.get_logger(__name__)
 class AdaptiveSalesAgent:
     """Main agent orchestrator that coordinates all adaptive capabilities"""
     
-    def __init__(self, config_path: Path):
+    def __init__(self, config_path: Path) -> Any:
         self.config_path = config_path
         self.discovery = DataSourceDiscovery(config_path)
         self._client_memories = {}  # Cache of AgentMemory instances per client
@@ -364,7 +364,7 @@ class AdaptiveSalesAgent:
         
         return optimizations
     
-    def _track_process_sequence(self, client_id: str, process_num: int):
+    def _track_process_sequence(self, client_id: str, process_num: int) -> Any:
         """Track process sequences for workflow pattern analysis"""
         if client_id not in self._last_processes:
             self._last_processes[client_id] = []
@@ -417,7 +417,7 @@ class AdaptiveSalesAgent:
         }
 
 
-def route_data_source(business_function: str):
+def route_data_source(business_function: str) -> Any:
     """
     Decorator for automatic data source routing and intelligent enhancement
     This decorator wraps process functions to provide adaptive capabilities
@@ -494,7 +494,7 @@ def conversation_intelligence(func: Callable) -> Callable:
 
 
 # Helper function to create learning feedback tools
-def create_learning_feedback_tool(agent: AdaptiveSalesAgent):
+def create_learning_feedback_tool(agent: AdaptiveSalesAgent) -> Any:
     """Create the learning feedback tool function"""
     
     async def provide_learning_feedback(
@@ -532,7 +532,7 @@ def create_learning_feedback_tool(agent: AdaptiveSalesAgent):
 
 
 # Helper function to inject agent into context
-def setup_agent_context(mcp_server, config_path: Path):
+def setup_agent_context(mcp_server, config_path: Path) -> Any:
     """Setup adaptive agent and inject into MCP server context"""
     
     agent = AdaptiveSalesAgent(config_path)

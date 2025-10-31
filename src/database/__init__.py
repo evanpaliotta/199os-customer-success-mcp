@@ -2,6 +2,7 @@
 Database configuration and base models for Customer Success MCP.
 """
 
+from typing import Optional, Dict, List, Any
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 import os
@@ -28,7 +29,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
-def get_db():
+def get_db() -> Any:
     """
     Database session dependency for FastAPI/MCP tools.
 

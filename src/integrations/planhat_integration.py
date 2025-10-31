@@ -68,7 +68,7 @@ class PlanhatIntegration(BaseIntegration):
         credentials: Dict[str, str],
         rate_limit_calls: int = 100,
         rate_limit_window: int = 60
-    ):
+    ) -> Any:
         """
         Initialize Planhat integration.
 
@@ -646,19 +646,19 @@ class PlanhatIntegration(BaseIntegration):
 
         return result
 
-    async def close(self):
+    async def close(self) -> Any:
         """Close HTTP session."""
         if self.session and not self.session.closed:
             await self.session.close()
             logger.info("planhat_session_closed")
 
 
-def test_planhat_integration():
+def test_planhat_integration() -> Any:
     """Test Planhat integration (requires credentials)."""
     import asyncio
     import os
 
-    async def run_tests():
+    async def run_tests() -> Any:
         api_key = os.getenv('PLANHAT_API_KEY')
         tenant_id = os.getenv('PLANHAT_TENANT_ID')
 

@@ -11,14 +11,14 @@ logger = structlog.get_logger(__name__)
 class CircuitBreaker:
     """Circuit breaker pattern for API fault tolerance"""
 
-    def __init__(self, failure_threshold: int = 5, timeout: int = 60):
+    def __init__(self, failure_threshold: int = 5, timeout: int = 60) -> Any:
         self.failure_threshold = failure_threshold
         self.timeout = timeout
         self.failure_count = 0
         self.last_failure_time = None
         self.state = "closed"  # closed, open, half_open
 
-    def call(self, func, *args, **kwargs):
+    def call(self, func, *args, **kwargs) -> Any:
         """Execute function with circuit breaker protection"""
         if self.state == "open":
             if self.last_failure_time and \
@@ -52,7 +52,7 @@ class CircuitBreaker:
 class ZendeskClient:
     """Production-ready Zendesk API client for support operations"""
 
-    def __init__(self):
+    def __init__(self) -> Any:
         self.subdomain = os.getenv("ZENDESK_SUBDOMAIN")
         self.email = os.getenv("ZENDESK_EMAIL")
         self.token = os.getenv("ZENDESK_API_TOKEN")
@@ -109,7 +109,7 @@ class ZendeskClient:
             )
             self.client = None
 
-    def _retry_with_backoff(self, func, *args, max_retries: int = 3, **kwargs):
+    def _retry_with_backoff(self, func, *args, max_retries: int = 3, **kwargs) -> Any:
         """Execute function with exponential backoff retry logic"""
         for attempt in range(max_retries):
             try:
@@ -181,7 +181,7 @@ class ZendeskClient:
         try:
             from zenpy.lib.api_objects import Ticket, User, CustomField
 
-            def _create():
+            def _create() -> Any:
                 # Create ticket object
                 ticket_data = {
                     "subject": subject,
@@ -260,7 +260,7 @@ class ZendeskClient:
             }
 
         try:
-            def _get():
+            def _get() -> Any:
                 return self.client.tickets(id=ticket_id)
 
             ticket = self.circuit_breaker.call(
@@ -336,7 +336,7 @@ class ZendeskClient:
         try:
             from zenpy.lib.api_objects import Ticket, CustomField, Comment
 
-            def _update():
+            def _update() -> Any:
                 # Get existing ticket
                 ticket = self.client.tickets(id=ticket_id)
 
@@ -435,7 +435,7 @@ class ZendeskClient:
         try:
             from zenpy.lib.api_objects import Ticket, Comment
 
-            def _add_comment():
+            def _add_comment() -> Any:
                 # Get existing ticket
                 ticket = self.client.tickets(id=ticket_id)
 
@@ -502,7 +502,7 @@ class ZendeskClient:
             }
 
         try:
-            def _search():
+            def _search() -> Any:
                 # Search for user by email
                 users = self.client.search(email, type='user')
                 return list(users)
@@ -595,7 +595,7 @@ class ZendeskClient:
 
             search_query = " ".join(search_terms) if search_terms else "*"
 
-            def _search():
+            def _search() -> Any:
                 # Search tickets
                 results = self.client.search(search_query, type='ticket')
                 tickets = []
@@ -687,7 +687,7 @@ class ZendeskClient:
         try:
             from zenpy.lib.api_objects import User
 
-            def _create():
+            def _create() -> Any:
                 user_data = {
                     "name": name,
                     "email": email,
@@ -778,7 +778,7 @@ class ZendeskClient:
             for i in range(0, total, batch_size):
                 batch = tickets[i:i + batch_size]
 
-                def _create_batch():
+                def _create_batch() -> Any:
                     ticket_objects = []
                     for ticket_data in batch:
                         ticket = Ticket(
@@ -880,7 +880,7 @@ class ZendeskClient:
             for i in range(0, total, batch_size):
                 batch = ticket_updates[i:i + batch_size]
 
-                def _update_batch():
+                def _update_batch() -> Any:
                     tickets_to_update = []
                     for update_data in batch:
                         ticket_id = update_data.get('ticket_id')
@@ -973,7 +973,7 @@ class ZendeskClient:
             }
 
         try:
-            def _get_metrics():
+            def _get_metrics() -> Any:
                 # Use Zendesk incremental API for efficiency
                 metrics = {
                     "total_tickets": 0,
@@ -1042,7 +1042,7 @@ class ZendeskClient:
             }
 
         try:
-            def _get_policy():
+            def _get_policy() -> Any:
                 if policy_id:
                     return self.client.sla_policies(id=policy_id)
                 else:
@@ -1086,7 +1086,7 @@ class ZendeskClient:
                 "message": "Failed to retrieve SLA policy"
             }
 
-    def close(self):
+    def close(self) -> Any:
         """Close the Zendesk client and cleanup resources"""
         if self.client:
             logger.info("zendesk_client_closing")

@@ -42,7 +42,7 @@ class SecureCredentialManager:
     - Audit logging of all access
     """
 
-    def __init__(self, config_path: Path, master_password: Optional[str] = None):
+    def __init__(self, config_path: Path, master_password: Optional[str] = None) -> Any:
         """
         Initialize credential manager.
 
@@ -428,7 +428,7 @@ class SecureCredentialManager:
             logger.error("credentials_file_load_failed", file=str(creds_file), error=str(e))
             return {}
 
-    def _save_credentials_file(self, creds_file: Path, credentials: Dict):
+    def _save_credentials_file(self, creds_file: Path, credentials: Dict) -> Any:
         """Save encrypted credentials file with secure permissions."""
         try:
             # Write with secure permissions
@@ -440,7 +440,7 @@ class SecureCredentialManager:
             raise
 
 
-def test_credential_manager():
+def test_credential_manager() -> Any:
     """Test the credential manager."""
     import tempfile
     import shutil

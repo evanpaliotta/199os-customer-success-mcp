@@ -14,7 +14,7 @@ import structlog
 
 logger = structlog.get_logger(__name__)
 
-def register_tools(mcp):
+def register_tools(mcp) -> Any:
     """Register all expansion & revenue tools"""
 
     @mcp.tool()

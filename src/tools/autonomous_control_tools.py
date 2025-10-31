@@ -3,6 +3,7 @@ Autonomous Control Tools
 MCP tools to control and monitor autonomous workers
 """
 
+from typing import Optional, Dict, List, Any
 import structlog
 from pathlib import Path
 import sys
@@ -21,7 +22,7 @@ _config_manager = None
 _scheduler = None
 
 
-def initialize_autonomous_system(tools):
+def initialize_autonomous_system(tools) -> Any:
     """Initialize autonomous system (called on server startup)"""
     global _config_manager, _scheduler
     try:
@@ -33,7 +34,7 @@ def initialize_autonomous_system(tools):
         logger.error(f"Failed to initialize autonomous system: {e}")
 
 
-def register_tools(mcp_instance):
+def register_tools(mcp_instance) -> Any:
     """Register autonomous control tools with MCP"""
 
     @mcp_instance.tool()

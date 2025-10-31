@@ -37,7 +37,7 @@ from sqlalchemy import func, and_, or_, desc
 import structlog
 
 # Import global dependencies
-def get_enhanced_agent() -> Any:
+def get_enhanced_agent():
     from server import enhanced_agent
     return enhanced_agent
 
@@ -785,7 +785,7 @@ class EngagementPatternResults(BaseModel):
 # Database Helper Functions
 # ============================================================================
 
-def _get_db_session() -> Any:
+def _get_db_session():
     """Get database session"""
     return SessionLocal()
 
@@ -966,7 +966,7 @@ def _get_previous_health_score(db, client_id: str) -> Optional[float]:
         return None
 
 
-def _save_health_score_to_db(db, client_id: str, component_scores: dict, weights: dict, overall_score: float) -> Any:
+def _save_health_score_to_db(db, client_id: str, component_scores: dict, weights: dict, overall_score: float):
     """Save health score to database"""
     try:
         health_record = HealthScoreComponentsDB(
@@ -1510,7 +1510,7 @@ def _get_stage_adoption_pattern(stage: str) -> str:
 # MCP Tool Registration
 # ============================================================================
 
-def register_tools(mcp) -> Any:
+def register_tools(mcp):
     """Register all health & segmentation tools with the MCP instance"""
 
     @mcp.tool()
@@ -1590,7 +1590,7 @@ def register_tools(mcp) -> Any:
             if days_diff > 365:
                 raise ValidationError("Analysis period cannot exceed 365 days")
 
-            logger.info(event=f"Tracking usage and engagement for {client_id} from {period_start} to {period_end}")
+            logger.info(f"Tracking usage and engagement for {client_id} from {period_start} to {period_end}")
 
             # Initialize Mixpanel client and track this analytics query
             mixpanel = MixpanelClient()
@@ -2084,7 +2084,7 @@ def register_tools(mcp) -> Any:
                     alerts_count=len(alerts)
                 )
 
-                logger.info(event=f"Successfully tracked usage and engagement for {client_id}")
+                logger.info(f"Successfully tracked usage and engagement for {client_id}")
                 return results.model_dump_json(indent=2)
 
             except Exception as e:
@@ -2098,10 +2098,10 @@ def register_tools(mcp) -> Any:
                 db.close()
 
         except ValidationError as e:
-            logger.error(event=f"Validation error in track_usage_engagement: {str(e)}")
+            logger.error(f"Validation error in track_usage_engagement: {str(e)}")
             raise
         except Exception as e:
-            logger.error(event=f"Error in track_usage_engagement: {str(e)}")
+            logger.error(f"Error in track_usage_engagement: {str(e)}")
             raise
 
 
@@ -2187,7 +2187,7 @@ def register_tools(mcp) -> Any:
             if scoring_model == "custom" and not component_weights:
                 raise ValidationError("component_weights required when using custom scoring_model")
 
-            logger.info(event=f"Calculating health score for {client_id} using {scoring_model} model")
+            logger.info(f"Calculating health score for {client_id} using {scoring_model} model")
 
             # Initialize database session
             db = _get_db_session()
@@ -2594,7 +2594,7 @@ def register_tools(mcp) -> Any:
                 recommended_actions=recommended_actions
             )
 
-            logger.info(event=f"Successfully calculated health score for {client_id}: {current_health_score} ({risk_level} risk)")
+            logger.info(f"Successfully calculated health score for {client_id}: {current_health_score} ({risk_level} risk)")
 
             # Track in Mixpanel
             mixpanel = MixpanelClient()
@@ -2615,10 +2615,12 @@ def register_tools(mcp) -> Any:
             return results.model_dump_json(indent=2)
 
         except ValidationError as e:
-            logger.error(event=f"Validation error in calculate_health_score: {str(e)}", client_id=client_id, error_type="validation")
+            logger.error("health_score_validation_error", client_id=client_id, error=str(e))
+            logger.error(f"Validation error in calculate_health_score: {str(e)}")
             raise
         except Exception as e:
-            logger.error(event=f"Error in calculate_health_score: {str(e)}", client_id=client_id, error_type="calculation_failed")
+            logger.error("health_score_calculation_failed", client_id=client_id, error=str(e))
+            logger.error(f"Error in calculate_health_score: {str(e)}")
             raise
 
 
@@ -2697,7 +2699,7 @@ def register_tools(mcp) -> Any:
             if min_segment_size < 1:
                 raise ValidationError("min_segment_size must be at least 1")
 
-            logger.info(event=f"Performing {segmentation_type} customer segmentation")
+            ctx.info(f"Performing {segmentation_type} customer segmentation")
 
             # Generate segmentation results based on type
             if segmentation_type == "value_based":
@@ -2898,14 +2900,14 @@ def register_tools(mcp) -> Any:
                 recommendations=recommendations
             )
 
-            logger.info(event=f"Successfully segmented {total_customers} customers into {len(segments)} segments")
+            ctx.info(f"Successfully segmented {total_customers} customers into {len(segments)} segments")
             return results.model_dump_json(indent=2)
 
         except ValidationError as e:
-            logger.error(event=f"Validation error in segment_customers: {str(e)}")
+            ctx.error(f"Validation error in segment_customers: {str(e)}")
             raise
         except Exception as e:
-            logger.error(event=f"Error in segment_customers: {str(e)}")
+            ctx.error(f"Error in segment_customers: {str(e)}")
             raise
 
 
@@ -2989,7 +2991,7 @@ def register_tools(mcp) -> Any:
             else:
                 scope_description = "all customers and features"
 
-            logger.info(event=f"Tracking feature adoption for {scope_description} over {time_period_days} days")
+            ctx.info(f"Tracking feature adoption for {scope_description} over {time_period_days} days")
 
             # Initialize database
             db = _get_db_session()
@@ -3377,7 +3379,7 @@ def register_tools(mcp) -> Any:
                     customers_in_scope=scope["customers_in_scope"]
                 )
 
-                logger.info(event=f"Successfully tracked feature adoption: {overall_adoption_rate:.1%} overall rate across {len(features)} features")
+                ctx.info(f"Successfully tracked feature adoption: {overall_adoption_rate:.1%} overall rate across {len(features)} features")
                 return results.model_dump_json(indent=2)
 
             except Exception as e:
@@ -3391,10 +3393,10 @@ def register_tools(mcp) -> Any:
                 db.close()
 
         except ValidationError as e:
-            logger.error(event=f"Validation error in track_feature_adoption: {str(e)}")
+            ctx.error(f"Validation error in track_feature_adoption: {str(e)}")
             raise
         except Exception as e:
-            logger.error(event=f"Error in track_feature_adoption: {str(e)}")
+            ctx.error(f"Error in track_feature_adoption: {str(e)}")
             raise
 
 
@@ -3471,7 +3473,7 @@ def register_tools(mcp) -> Any:
 
             scope = "all customers" if not client_id else f"customer {client_id}"
             stage_filter = f" in {current_stage} stage" if current_stage else ""
-            logger.info(event=f"Managing lifecycle stages for {scope}{stage_filter}")
+            ctx.info(f"Managing lifecycle stages for {scope}{stage_filter}")
 
             # Get real stage distribution from database
             db = _get_db_session()
@@ -3914,7 +3916,7 @@ def register_tools(mcp) -> Any:
                 recommended_actions=recommended_actions
             )
 
-            logger.info(event=f"Successfully managed lifecycle stages: {total_customers} customers across {len(stage_distribution)} stages")
+            ctx.info(f"Successfully managed lifecycle stages: {total_customers} customers across {len(stage_distribution)} stages")
 
             # Track in Mixpanel
             mixpanel = MixpanelClient()
@@ -3935,10 +3937,10 @@ def register_tools(mcp) -> Any:
 
         except ValidationError as e:
             logger.error("lifecycle_management_validation_error", error=str(e))
-            logger.error(event=f"Validation error in manage_lifecycle_stages: {str(e)}")
+            ctx.error(f"Validation error in manage_lifecycle_stages: {str(e)}")
             raise
         except Exception as e:
-            logger.error(event=f"Error in manage_lifecycle_stages: {str(e)}")
+            ctx.error(f"Error in manage_lifecycle_stages: {str(e)}")
             raise
 
 
@@ -4021,7 +4023,7 @@ def register_tools(mcp) -> Any:
             if milestone_framework == "custom" and not custom_milestones:
                 raise ValidationError("custom_milestones required when using custom framework")
 
-            logger.info(event=f"Tracking adoption milestones using {milestone_framework} framework")
+            ctx.info(f"Tracking adoption milestones using {milestone_framework} framework")
 
             # Define milestone definitions
             if milestone_framework == "standard":
@@ -4497,14 +4499,14 @@ def register_tools(mcp) -> Any:
                 recommended_actions=recommended_actions
             )
 
-            logger.info(event=f"Successfully tracked adoption milestones: {num_customers} customers across {total_milestones} milestones")
+            ctx.info(f"Successfully tracked adoption milestones: {num_customers} customers across {total_milestones} milestones")
             return results.model_dump_json(indent=2)
 
         except ValidationError as e:
-            logger.error(event=f"Validation error in track_adoption_milestones: {str(e)}")
+            ctx.error(f"Validation error in track_adoption_milestones: {str(e)}")
             raise
         except Exception as e:
-            logger.error(event=f"Error in track_adoption_milestones: {str(e)}")
+            ctx.error(f"Error in track_adoption_milestones: {str(e)}")
             raise
 
 
@@ -4580,7 +4582,7 @@ def register_tools(mcp) -> Any:
         MCP Process: 93 - VIP Treatment & Tiered Service Levels
         """
         try:
-            logger.info("Segmenting customers by value tier")
+            ctx.info("Segmenting customers by value tier")
 
             # Use provided tier definitions or defaults
             if not tier_definitions:
@@ -5197,12 +5199,12 @@ def register_tools(mcp) -> Any:
                     total_arr=total_arr
                 )
 
-                logger.info(event=f"Successfully segmented {total_customers} customers into {len(tier_definitions)} value tiers")
+                ctx.info(f"Successfully segmented {total_customers} customers into {len(tier_definitions)} value tiers")
                 return results.model_dump_json(indent=2)
 
             except Exception as e:
                 logger.error("segment_by_value_tier_error", error=str(e))
-                logger.error(event=f"Error in segment_by_value_tier: {str(e)}")
+                ctx.error(f"Error in segment_by_value_tier: {str(e)}")
                 return json.dumps({
                     "status": "error",
                     "error": str(e),
@@ -5212,10 +5214,10 @@ def register_tools(mcp) -> Any:
                 db.close()
 
         except ValidationError as e:
-            logger.error(event=f"Validation error in segment_by_value_tier: {str(e)}")
+            ctx.error(f"Validation error in segment_by_value_tier: {str(e)}")
             raise
         except Exception as e:
-            logger.error(event=f"Error in segment_by_value_tier: {str(e)}")
+            ctx.error(f"Error in segment_by_value_tier: {str(e)}")
             raise
 
 
@@ -5303,7 +5305,7 @@ def register_tools(mcp) -> Any:
             if not pattern_types:
                 pattern_types = ["temporal", "feature_usage", "communication", "support"]
 
-            logger.info(event=f"Analyzing engagement patterns for {analysis_scope} over {lookback_period_days} days")
+            ctx.info(f"Analyzing engagement patterns for {analysis_scope} over {lookback_period_days} days")
 
             # Determine customers analyzed based on scope - using real database
             db = _get_db_session()
@@ -5857,14 +5859,14 @@ def register_tools(mcp) -> Any:
                 recommended_actions=recommended_actions
             )
 
-            logger.info(event=f"Successfully analyzed engagement patterns: {len(identified_patterns)} patterns identified across {customers_analyzed} customers")
+            ctx.info(f"Successfully analyzed engagement patterns: {len(identified_patterns)} patterns identified across {customers_analyzed} customers")
             return results.model_dump_json(indent=2)
 
         except ValidationError as e:
-            logger.error(event=f"Validation error in analyze_engagement_patterns: {str(e)}")
+            ctx.error(f"Validation error in analyze_engagement_patterns: {str(e)}")
             raise
         except Exception as e:
-            logger.error(event=f"Error in analyze_engagement_patterns: {str(e)}")
+            ctx.error(f"Error in analyze_engagement_patterns: {str(e)}")
             raise
 
 

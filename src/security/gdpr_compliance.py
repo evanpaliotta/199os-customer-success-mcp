@@ -54,7 +54,7 @@ class GDPRRequest:
         user_id: Optional[str] = None,
         categories: Optional[List[DataCategory]] = None,
         reason: Optional[str] = None
-    ):
+    ) -> Any:
         """Initialize a GDPR request."""
         self.request_id = self._generate_request_id()
         self.request_type = request_type
@@ -108,7 +108,7 @@ class GDPRComplianceManager:
         self,
         data_directory: Path,
         audit_logger: Optional[Any] = None
-    ):
+    ) -> Any:
         """
         Initialize GDPR compliance manager.
 
@@ -666,14 +666,14 @@ class GDPRComplianceManager:
         else:
             return f"{safe_client_id}_*.json*"
 
-    def _save_request(self, request: GDPRRequest):
+    def _save_request(self, request: GDPRRequest) -> Any:
         """Save request to disk."""
         request_file = self.requests_directory / f"{request.request_id}.json"
         request_file.write_text(json.dumps(request.to_dict(), indent=2))
         os.chmod(request_file, 0o600)
 
 
-def test_gdpr_compliance():
+def test_gdpr_compliance() -> Any:
     """Test GDPR compliance manager."""
     import tempfile
 

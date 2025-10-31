@@ -35,7 +35,7 @@ class EnhancedSalesAgent:
     intelligent caching, and conversation context
     """
     
-    def __init__(self, config_path: Path):
+    def __init__(self, config_path: Path) -> Any:
         self.config_path = config_path
         
         # Initialize all subsystems
@@ -233,7 +233,7 @@ class EnhancedSalesAgent:
         return result_data
     
     def _track_performance(self, client_id: str, processes: List[int], 
-                          results: List[Dict], routing_result: Dict[str, Any]):
+                          results: List[Dict], routing_result: Dict[str, Any]) -> Any:
         """Track performance metrics"""
         timestamp = time.time()
         
@@ -366,12 +366,12 @@ class EnhancedSalesAgent:
         session = self.context_manager.get_or_create_session(client_id)
         return self.context_manager.create_context_summary(session.session_id)
     
-    def invalidate_cache(self, client_id: str, task_type: Optional[str] = None):
+    def invalidate_cache(self, client_id: str, task_type: Optional[str] = None) -> Any:
         """Invalidate cache for client"""
         self.cache_manager.invalidate_cache(task_type)
         logger.info(f"Cache invalidated for client {client_id}")
     
-    def cleanup(self):
+    def cleanup(self) -> Any:
         """Clean up expired sessions and cache"""
         self.context_manager.cleanup_expired_sessions()
         logger.info("Cleanup completed")

@@ -91,7 +91,7 @@ def validate_score(score: float, min_val: float = -1.0, max_val: float = 1.0) ->
     return float(score)
 
 
-def register_tools(mcp):
+def register_tools(mcp) -> Any:
     """Register all feedback intelligence tools with the MCP instance"""
 
     # ========================================================================

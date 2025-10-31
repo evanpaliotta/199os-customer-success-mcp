@@ -22,7 +22,7 @@ RATE_LIMIT_PER_CLIENT_PER_MINUTE = int(os.getenv('RATE_LIMIT_PER_CLIENT_PER_MINU
 class RateLimitExceeded(Exception):
     """Raised when rate limit is exceeded"""
 
-    def __init__(self, limit_type: str, retry_after: int):
+    def __init__(self, limit_type: str, retry_after: int) -> Any:
         self.limit_type = limit_type
         self.retry_after = retry_after
         super().__init__(f"Rate limit exceeded: {limit_type}. Retry after {retry_after} seconds")
@@ -40,7 +40,7 @@ class RedisRateLimiter:
     - Graceful degradation if Redis unavailable
     """
 
-    def __init__(self):
+    def __init__(self) -> Any:
         """Initialize rate limiter with Redis connection"""
         self.enabled = RATE_LIMIT_ENABLED
         self.redis_client = None
@@ -275,20 +275,20 @@ def get_rate_limiter() -> RedisRateLimiter:
     return _rate_limiter
 
 
-def rate_limit(func):
+def rate_limit(func) -> Any:
     """
     Decorator to apply rate limiting to MCP tool functions
 
     Usage:
         @rate_limit
         @mcp.tool()
-        async def my_tool(ctx: Context, client_id: str, ...):
+        async def my_tool(ctx: Context, client_id: str, ...) -> Any:
             ...
 
     The decorated function must have a 'client_id' parameter.
     """
     @wraps(func)
-    async def wrapper(*args, **kwargs):
+    async def wrapper(*args, **kwargs) -> Any:
         # Extract client_id from kwargs
         client_id = kwargs.get('client_id', 'unknown')
         tool_name = func.__name__

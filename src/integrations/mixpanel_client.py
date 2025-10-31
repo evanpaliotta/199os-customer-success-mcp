@@ -29,14 +29,14 @@ logger = structlog.get_logger(__name__)
 class CircuitBreaker:
     """Circuit breaker pattern for API resilience"""
 
-    def __init__(self, failure_threshold: int = 5, timeout: int = 60):
+    def __init__(self, failure_threshold: int = 5, timeout: int = 60) -> Any:
         self.failure_threshold = failure_threshold
         self.timeout = timeout
         self.failures = 0
         self.last_failure_time = None
         self.state = 'closed'  # closed, open, half_open
 
-    def call(self, func, *args, **kwargs):
+    def call(self, func, *args, **kwargs) -> Any:
         """Execute function with circuit breaker protection"""
         if self.state == 'open':
             if time.time() - self.last_failure_time >= self.timeout:
@@ -54,7 +54,7 @@ class CircuitBreaker:
             self.record_failure()
             raise e
 
-    def record_failure(self):
+    def record_failure(self) -> Any:
         """Record a failure and potentially open circuit"""
         self.failures += 1
         self.last_failure_time = time.time()
@@ -67,7 +67,7 @@ class CircuitBreaker:
                 threshold=self.failure_threshold
             )
 
-    def reset(self):
+    def reset(self) -> Any:
         """Reset circuit breaker to closed state"""
         self.failures = 0
         self.last_failure_time = None
@@ -90,7 +90,7 @@ class MixpanelClient:
         api_secret: Optional[str] = None,
         batch_size: int = 50,
         flush_interval: int = 10
-    ):
+    ) -> Any:
         """
         Initialize Mixpanel client
 
@@ -225,7 +225,7 @@ class MixpanelClient:
             data = base64.b64encode(json.dumps(events_to_send).encode()).decode()
 
             # Send to Mixpanel with circuit breaker
-            def send_request():
+            def send_request() -> Any:
                 response = self.session.post(
                     self.TRACK_URL,
                     data={"data": data},
@@ -286,7 +286,7 @@ class MixpanelClient:
             # Encode and send
             data = base64.b64encode(json.dumps([profile_data]).encode()).decode()
 
-            def send_request():
+            def send_request() -> Any:
                 response = self.session.post(
                     self.ENGAGE_URL,
                     data={"data": data},
@@ -340,7 +340,7 @@ class MixpanelClient:
             # Encode and send
             data = base64.b64encode(json.dumps([profile_data]).encode()).decode()
 
-            def send_request():
+            def send_request() -> Any:
                 response = self.session.post(
                     self.ENGAGE_URL,
                     data={"data": data},
@@ -404,7 +404,7 @@ class MixpanelClient:
                 **(params or {})
             }
 
-            def send_request():
+            def send_request() -> Any:
                 response = self.session.post(
                     self.QUERY_URL,
                     json=payload,
@@ -466,7 +466,7 @@ class MixpanelClient:
             properties=event_properties
         )
 
-    def close(self):
+    def close(self) -> Any:
         """Close the client and flush any remaining events"""
         if self._is_configured() and self.event_buffer:
             logger.info("mixpanel_client_closing", buffered_events=len(self.event_buffer))

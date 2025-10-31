@@ -27,7 +27,7 @@ import structlog
 logger = structlog.get_logger(__name__)
 
 
-def register_tools(mcp):
+def register_tools(mcp) -> Any:
     """Register all onboarding & training tools with the MCP instance"""
 
     @mcp.tool()

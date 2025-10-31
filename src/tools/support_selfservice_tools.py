@@ -34,7 +34,7 @@ logger = structlog.get_logger(__name__)
 # Initialize Zendesk client (singleton pattern)
 _zendesk_client = None
 
-def _get_zendesk_client():
+def _get_zendesk_client() -> Any:
     """Get or create Zendesk client instance"""
     global _zendesk_client
     if _zendesk_client is None:
@@ -42,7 +42,7 @@ def _get_zendesk_client():
     return _zendesk_client
 
 
-def register_tools(mcp):
+def register_tools(mcp) -> Any:
     """Register all support and self-service tools with the MCP instance"""
 
     @mcp.tool()
@@ -2014,7 +2014,7 @@ def _find_best_agent(
         return None
 
     # Score agents based on expertise and workload
-    def score_agent(agent):
+    def score_agent(agent) -> Any:
         expertise_match = 10 if ticket['category'] in agent.get('expertise', []) else 0
         workload_score = (max_tickets - agent['current_tickets']) * 2
         return expertise_match + workload_score

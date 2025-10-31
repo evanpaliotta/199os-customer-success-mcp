@@ -27,7 +27,7 @@ class ConversationSession:
 class ConversationContextManager:
     """Stub implementation for conversation context management"""
 
-    def __init__(self, config_path):
+    def __init__(self, config_path) -> Any:
         self.config_path = config_path
         self.sessions = {}
 
@@ -41,13 +41,13 @@ class ConversationContextManager:
         return self.sessions[client_id]
 
     def update_context(self, session_id: str, processes: List[int],
-                      parameters: Dict[str, Any], original_request: str):
+                      parameters: Dict[str, Any], original_request: str) -> Any:
         """Update conversation context"""
         pass
 
     def add_process_result(self, session_id: str, process_num: int,
                           process_name: str, parameters: Dict[str, Any],
-                          result: Dict[str, Any], confidence: float):
+                          result: Dict[str, Any], confidence: float) -> Any:
         """Add a process result to the session"""
         for session in self.sessions.values():
             if session.session_id == session_id:
@@ -68,6 +68,6 @@ class ConversationContextManager:
         """Create a context summary"""
         return {"summary": "Context summary"}
 
-    def cleanup_expired_sessions(self):
+    def cleanup_expired_sessions(self) -> Any:
         """Clean up expired sessions"""
         pass

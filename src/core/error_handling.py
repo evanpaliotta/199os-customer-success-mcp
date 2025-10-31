@@ -28,7 +28,7 @@ class SalesMCPError(Exception):
         error_code: Optional[str] = None,
         details: Optional[Dict[str, Any]] = None,
         recoverable: bool = False
-    ):
+    ) -> Any:
         super().__init__(message)
         self.message = message
         self.error_code = error_code or self.__class__.__name__
@@ -59,7 +59,7 @@ class DataError(SalesMCPError):
 
 class DatabaseError(DataError):
     """Database connection or query errors"""
-    def __init__(self, message: str, query: Optional[str] = None, **kwargs):
+    def __init__(self, message: str, query: Optional[str] = None, **kwargs) -> Any:
         super().__init__(message, **kwargs)
         if query:
             self.details["query"] = query
@@ -72,7 +72,7 @@ class CacheError(DataError):
 
 class DataValidationError(DataError):
     """Data validation failures"""
-    def __init__(self, message: str, field: Optional[str] = None, value: Any = None, **kwargs):
+    def __init__(self, message: str, field: Optional[str] = None, value: Any = None, **kwargs) -> Any:
         super().__init__(message, **kwargs)
         if field:
             self.details["field"] = field
@@ -82,7 +82,7 @@ class DataValidationError(DataError):
 
 class DataNotFoundError(DataError):
     """Requested data not found"""
-    def __init__(self, message: str, resource_type: Optional[str] = None, resource_id: Optional[str] = None, **kwargs):
+    def __init__(self, message: str, resource_type: Optional[str] = None, resource_id: Optional[str] = None, **kwargs) -> Any:
         super().__init__(message, recoverable=True, **kwargs)
         if resource_type:
             self.details["resource_type"] = resource_type
@@ -101,7 +101,7 @@ class IntegrationError(SalesMCPError):
 
 class CRMError(IntegrationError):
     """CRM-specific errors (Salesforce, HubSpot, etc.)"""
-    def __init__(self, message: str, crm_system: Optional[str] = None, **kwargs):
+    def __init__(self, message: str, crm_system: Optional[str] = None, **kwargs) -> Any:
         super().__init__(message, recoverable=True, **kwargs)
         if crm_system:
             self.details["crm_system"] = crm_system
@@ -116,7 +116,7 @@ class APIError(IntegrationError):
         status_code: Optional[int] = None,
         response_body: Optional[str] = None,
         **kwargs
-    ):
+    ) -> Any:
         super().__init__(message, recoverable=True, **kwargs)
         if api_name:
             self.details["api_name"] = api_name
@@ -128,7 +128,7 @@ class APIError(IntegrationError):
 
 class RateLimitError(APIError):
     """API rate limit exceeded"""
-    def __init__(self, message: str, retry_after: Optional[int] = None, **kwargs):
+    def __init__(self, message: str, retry_after: Optional[int] = None, **kwargs) -> Any:
         super().__init__(message, recoverable=True, **kwargs)
         if retry_after:
             self.details["retry_after_seconds"] = retry_after
@@ -136,7 +136,7 @@ class RateLimitError(APIError):
 
 class AuthenticationError(IntegrationError):
     """Authentication/authorization failures"""
-    def __init__(self, message: str, service: Optional[str] = None, **kwargs):
+    def __init__(self, message: str, service: Optional[str] = None, **kwargs) -> Any:
         super().__init__(message, **kwargs)
         if service:
             self.details["service"] = service
@@ -153,7 +153,7 @@ class BusinessLogicError(SalesMCPError):
 
 class InvalidOperationError(BusinessLogicError):
     """Operation not allowed in current state"""
-    def __init__(self, message: str, operation: Optional[str] = None, current_state: Optional[str] = None, **kwargs):
+    def __init__(self, message: str, operation: Optional[str] = None, current_state: Optional[str] = None, **kwargs) -> Any:
         super().__init__(message, **kwargs)
         if operation:
             self.details["operation"] = operation
@@ -163,7 +163,7 @@ class InvalidOperationError(BusinessLogicError):
 
 class QuotaExceededError(BusinessLogicError):
     """Resource quota exceeded"""
-    def __init__(self, message: str, quota_type: Optional[str] = None, current: Optional[int] = None, limit: Optional[int] = None, **kwargs):
+    def __init__(self, message: str, quota_type: Optional[str] = None, current: Optional[int] = None, limit: Optional[int] = None, **kwargs) -> Any:
         super().__init__(message, recoverable=True, **kwargs)
         if quota_type:
             self.details["quota_type"] = quota_type
@@ -175,7 +175,7 @@ class QuotaExceededError(BusinessLogicError):
 
 class InsufficientDataError(BusinessLogicError):
     """Insufficient data to perform operation"""
-    def __init__(self, message: str, required_data: Optional[list] = None, **kwargs):
+    def __init__(self, message: str, required_data: Optional[list] = None, **kwargs) -> Any:
         super().__init__(message, recoverable=True, **kwargs)
         if required_data:
             self.details["required_data"] = required_data
@@ -187,7 +187,7 @@ class InsufficientDataError(BusinessLogicError):
 
 class ConfigurationError(SalesMCPError):
     """Configuration-related errors"""
-    def __init__(self, message: str, config_key: Optional[str] = None, **kwargs):
+    def __init__(self, message: str, config_key: Optional[str] = None, **kwargs) -> Any:
         super().__init__(message, **kwargs)
         if config_key:
             self.details["config_key"] = config_key
@@ -195,7 +195,7 @@ class ConfigurationError(SalesMCPError):
 
 class CredentialError(SalesMCPError):
     """Credential management errors"""
-    def __init__(self, message: str, credential_type: Optional[str] = None, **kwargs):
+    def __init__(self, message: str, credential_type: Optional[str] = None, **kwargs) -> Any:
         super().__init__(message, **kwargs)
         if credential_type:
             self.details["credential_type"] = credential_type
@@ -217,7 +217,7 @@ class IntelligenceError(SalesMCPError):
 
 class ModelLoadError(IntelligenceError):
     """ML model loading failures"""
-    def __init__(self, message: str, model_name: Optional[str] = None, **kwargs):
+    def __init__(self, message: str, model_name: Optional[str] = None, **kwargs) -> Any:
         super().__init__(message, **kwargs)
         if model_name:
             self.details["model_name"] = model_name
@@ -225,7 +225,7 @@ class ModelLoadError(IntelligenceError):
 
 class PredictionError(IntelligenceError):
     """Prediction/inference errors"""
-    def __init__(self, message: str, model_name: Optional[str] = None, **kwargs):
+    def __init__(self, message: str, model_name: Optional[str] = None, **kwargs) -> Any:
         super().__init__(message, recoverable=True, **kwargs)
         if model_name:
             self.details["model_name"] = model_name
@@ -233,7 +233,7 @@ class PredictionError(IntelligenceError):
 
 class InsufficientTrainingDataError(IntelligenceError):
     """Not enough training data for ML operation"""
-    def __init__(self, message: str, required_samples: Optional[int] = None, actual_samples: Optional[int] = None, **kwargs):
+    def __init__(self, message: str, required_samples: Optional[int] = None, actual_samples: Optional[int] = None, **kwargs) -> Any:
         super().__init__(message, recoverable=True, **kwargs)
         if required_samples:
             self.details["required_samples"] = required_samples
@@ -252,7 +252,7 @@ class ProcessError(SalesMCPError):
 
 class ProcessExecutionError(ProcessError):
     """Process execution failures"""
-    def __init__(self, message: str, process_id: Optional[str] = None, step: Optional[str] = None, **kwargs):
+    def __init__(self, message: str, process_id: Optional[str] = None, step: Optional[str] = None, **kwargs) -> Any:
         super().__init__(message, **kwargs)
         if process_id:
             self.details["process_id"] = process_id
@@ -262,7 +262,7 @@ class ProcessExecutionError(ProcessError):
 
 class WorkflowError(ProcessError):
     """Workflow orchestration errors"""
-    def __init__(self, message: str, workflow_id: Optional[str] = None, **kwargs):
+    def __init__(self, message: str, workflow_id: Optional[str] = None, **kwargs) -> Any:
         super().__init__(message, **kwargs)
         if workflow_id:
             self.details["workflow_id"] = workflow_id
@@ -289,7 +289,7 @@ def handle_errors(
 
     Usage:
         @handle_errors(error_message="Failed to fetch data", return_on_error={})
-        async def my_tool(ctx, ...):
+        async def my_tool(ctx, ...) -> Any:
             ...
     """
     def decorator(func: Callable[..., T]) -> Callable[..., Union[T, Any]]:
@@ -310,7 +310,7 @@ def handle_errors(
                 )
 
                 if log_traceback:
-                    logger.debug(f"Traceback: {traceback.format_exc()}")
+                    logger.debug(event=f"Traceback: {traceback.format_exc()}")
 
                 # If we have a context object, log to it too
                 if args and hasattr(args[0], 'error'):
@@ -343,7 +343,7 @@ def handle_errors(
                 )
 
                 if log_traceback:
-                    logger.error(f"Traceback: {traceback.format_exc()}")
+                    logger.error(event=f"Traceback: {traceback.format_exc()}")
 
                 # If we have a context object, log to it too
                 if args and hasattr(args[0], 'error'):
@@ -477,7 +477,7 @@ class ErrorRecovery:
 
             except Exception as e:
                 # Non-recoverable exception, fail immediately
-                logger.error(f"Non-recoverable error during retry: {e}")
+                logger.error(event=f"Non-recoverable error during retry: {e}")
                 raise
 
         # Should never reach here, but just in case

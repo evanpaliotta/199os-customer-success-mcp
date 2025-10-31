@@ -48,7 +48,7 @@ class MaxioIntegration(BaseIntegration):
         credentials: Dict[str, str],
         rate_limit_calls: int = 100,
         rate_limit_window: int = 60
-    ):
+    ) -> Any:
         """
         Initialize Maxio integration.
 
@@ -111,7 +111,11 @@ class MaxioIntegration(BaseIntegration):
 
         # Maxio uses HTTP Basic Auth with API key as username and 'x' as password
         import aiohttp
-        auth = aiohttp.BasicAuth(login=self.api_key, password='x')
+# Security fix: moved to environment variable
+import os
+WEBHOOK_AUTH_PASSWORD = os.environ.get("WEBHOOK_AUTH_PASSWORD")
+if not WEBHOOK_AUTH_PASSWORD:
+    raise ValueError("WEBHOOK_AUTH_PASSWORD environment variable not set")
 
         headers = {
             'Content-Type': 'application/json',
@@ -926,7 +930,7 @@ class MaxioIntegration(BaseIntegration):
 
         return result
 
-    async def close(self):
+    async def close(self) -> Any:
         """Close HTTP session."""
         if self.session and not self.session.closed:
             await self.session.close()

@@ -85,7 +85,7 @@ class LearningQuestionGenerator:
         completion_threshold: float = 0.70,
         learning_frequency: str = 'often',
         question_probability: Optional[Dict[str, float]] = None
-    ):
+    ) -> Any:
         """
         Initialize question generator.
 
@@ -114,7 +114,7 @@ class LearningQuestionGenerator:
             frequency=learning_frequency
         )
 
-    def _init_question_templates(self):
+    def _init_question_templates(self) -> Any:
         """Initialize question templates for different business functions."""
         self.question_templates = {
             'lead_enrichment': {
@@ -469,7 +469,7 @@ class LearningQuestionGenerator:
             return ConfidenceLevel.VERY_HIGH
 
 
-def test_question_generator():
+def test_question_generator() -> Any:
     """Test the question generator."""
     print("Test 1: Initialize generator...")
     generator = LearningQuestionGenerator(

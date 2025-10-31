@@ -393,6 +393,6 @@ async def health_check_deep(ctx: Context) -> Dict[str, Any]:
 
 
 # Export the FastMCP instance for registration
-def get_health_check_tools():
+def get_health_check_tools() -> Any:
     """Get the health check MCP tools for registration"""
     return health_mcp

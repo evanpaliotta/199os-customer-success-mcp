@@ -29,29 +29,29 @@ except ImportError:
     PROMETHEUS_AVAILABLE = False
     # Provide mock classes for when prometheus_client is not installed
     class Counter:
-        def __init__(self, *args, **kwargs): pass
-        def inc(self, *args, **kwargs): pass
-        def labels(self, **kwargs): return self
+        def __init__(self, *args, **kwargs) -> Any: pass
+        def inc(self, *args, **kwargs) -> Any: pass
+        def labels(self, **kwargs) -> Any: return self
 
     class Histogram:
-        def __init__(self, *args, **kwargs): pass
-        def observe(self, *args, **kwargs): pass
-        def labels(self, **kwargs): return self
-        def time(self): return self
-        def __enter__(self): return self
-        def __exit__(self, *args): pass
+        def __init__(self, *args, **kwargs) -> Any: pass
+        def observe(self, *args, **kwargs) -> Any: pass
+        def labels(self, **kwargs) -> Any: return self
+        def time(self) -> Any: return self
+        def __enter__(self) -> Any: return self
+        def __exit__(self, *args) -> Any: pass
 
     class Gauge:
-        def __init__(self, *args, **kwargs): pass
-        def set(self, *args, **kwargs): pass
-        def inc(self, *args, **kwargs): pass
-        def dec(self, *args, **kwargs): pass
-        def labels(self, **kwargs): return self
+        def __init__(self, *args, **kwargs) -> Any: pass
+        def set(self, *args, **kwargs) -> Any: pass
+        def inc(self, *args, **kwargs) -> Any: pass
+        def dec(self, *args, **kwargs) -> Any: pass
+        def labels(self, **kwargs) -> Any: return self
 
     class Summary:
-        def __init__(self, *args, **kwargs): pass
-        def observe(self, *args, **kwargs): pass
-        def labels(self, **kwargs): return self
+        def __init__(self, *args, **kwargs) -> Any: pass
+        def observe(self, *args, **kwargs) -> Any: pass
+        def labels(self, **kwargs) -> Any: return self
 
 logger = structlog.get_logger(__name__)
 
@@ -161,17 +161,17 @@ memory_usage_bytes = Gauge(
 # Performance Monitoring Decorators
 # ============================================================================
 
-def monitor_tool_execution(tool_name: Optional[str] = None):
+def monitor_tool_execution(tool_name: Optional[str] = None) -> Any:
     """
     Decorator to monitor tool execution performance.
 
     Usage:
         @monitor_tool_execution()
-        async def my_tool(ctx, ...):
+        async def my_tool(ctx, ...) -> Any:
             ...
 
         @monitor_tool_execution(tool_name="custom_name")
-        async def my_tool(ctx, ...):
+        async def my_tool(ctx, ...) -> Any:
             ...
     """
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
@@ -311,13 +311,13 @@ def monitor_tool_execution(tool_name: Optional[str] = None):
     return decorator
 
 
-def monitor_database_query(query_type: str = "select"):
+def monitor_database_query(query_type: str = "select") -> Any:
     """
     Decorator to monitor database query performance.
 
     Usage:
         @monitor_database_query("insert")
-        async def insert_customer(data):
+        async def insert_customer(data) -> Any:
             ...
     """
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
@@ -414,13 +414,13 @@ def monitor_database_query(query_type: str = "select"):
     return decorator
 
 
-def monitor_api_call(integration: str, endpoint: str):
+def monitor_api_call(integration: str, endpoint: str) -> Any:
     """
     Decorator to monitor platform API call performance.
 
     Usage:
         @monitor_api_call("zendesk", "create_ticket")
-        async def create_zendesk_ticket(data):
+        async def create_zendesk_ticket(data) -> Any:
             ...
     """
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
@@ -547,13 +547,13 @@ def monitor_api_call(integration: str, endpoint: str):
 # Cache Monitoring Functions
 # ============================================================================
 
-def record_cache_hit(cache_type: str = "redis"):
+def record_cache_hit(cache_type: str = "redis") -> Any:
     """Record a cache hit"""
     cache_hit_counter.labels(cache_type=cache_type).inc()
     logger.debug("Cache hit", cache_type=cache_type)
 
 
-def record_cache_miss(cache_type: str = "redis"):
+def record_cache_miss(cache_type: str = "redis") -> Any:
     """Record a cache miss"""
     cache_miss_counter.labels(cache_type=cache_type).inc()
     logger.debug("Cache miss", cache_type=cache_type)
@@ -563,7 +563,7 @@ def record_cache_miss(cache_type: str = "redis"):
 # Health Score Monitoring
 # ============================================================================
 
-def monitor_health_score_calculation():
+def monitor_health_score_calculation() -> Any:
     """Context manager for monitoring health score calculation"""
     return health_score_calculation_duration.time()
 
@@ -572,7 +572,7 @@ def monitor_health_score_calculation():
 # Memory Monitoring
 # ============================================================================
 
-def update_memory_usage():
+def update_memory_usage() -> Any:
     """Update memory usage metrics"""
     try:
         import psutil
@@ -592,7 +592,7 @@ def update_memory_usage():
 class PrometheusMetricsHandler:
     """Handler for Prometheus metrics endpoint"""
 
-    def __init__(self, registry=None):
+    def __init__(self, registry=None) -> Any:
         self.registry = registry
 
     async def handle_metrics(self) -> tuple[bytes, str]:
@@ -616,7 +616,7 @@ class PrometheusMetricsHandler:
             return b"# Error generating metrics\n", "text/plain"
 
 
-def start_metrics_server(port: int = 9090):
+def start_metrics_server(port: int = 9090) -> Any:
     """
     Start a standalone HTTP server for Prometheus metrics.
 
@@ -629,9 +629,9 @@ def start_metrics_server(port: int = 9090):
 
     try:
         start_http_server(port)
-        logger.info(f"Prometheus metrics server started on port {port}")
+        logger.info(event=f"Prometheus metrics server started on port {port}")
     except Exception as e:
-        logger.error(f"Failed to start metrics server", error=str(e))
+        logger.error(event=f"Failed to start metrics server", error=str(e))
 
 
 # ============================================================================
@@ -671,7 +671,7 @@ class PerformanceSummary:
 # Initialization
 # ============================================================================
 
-def initialize_performance_monitoring():
+def initialize_performance_monitoring() -> Any:
     """Initialize performance monitoring system"""
     logger.info("Initializing performance monitoring",
                 prometheus_available=PROMETHEUS_AVAILABLE)

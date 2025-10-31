@@ -2,12 +2,13 @@
 Customer Success Tools Package
 Registers all MCP tools organized by category
 """
+from typing import Optional, Dict, List, Any
 import structlog
 
 logger = structlog.get_logger(__name__)
 
 
-def register_all_tools(mcp):
+def register_all_tools(mcp) -> Any:
     """
     Register all Customer Success tools with the MCP server instance with comprehensive error handling.
 

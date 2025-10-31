@@ -334,7 +334,7 @@ class Newsletter(BaseModel):
 # Tool Registration
 # ============================================================================
 
-def register_tools(mcp):
+def register_tools(mcp) -> Any:
     """Register all communication and engagement tools with the MCP instance"""
 
     # ========================================================================

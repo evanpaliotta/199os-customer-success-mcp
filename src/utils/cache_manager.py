@@ -12,7 +12,7 @@ class CacheEntry:
 class IntelligentCacheManager:
     """Stub implementation for intelligent cache management"""
 
-    def __init__(self, cache_path=None):
+    def __init__(self, cache_path=None) -> Any:
         self.cache_path = cache_path
         self._cache = {}
 
@@ -20,16 +20,16 @@ class IntelligentCacheManager:
         """Get value from cache"""
         return self._cache.get(key)
 
-    def set(self, key: str, value: Any, ttl: int = 3600):
+    def set(self, key: str, value: Any, ttl: int = 3600) -> Any:
         """Set value in cache with TTL"""
         self._cache[key] = value
 
-    def delete(self, key: str):
+    def delete(self, key: str) -> Any:
         """Delete value from cache"""
         if key in self._cache:
             del self._cache[key]
 
-    def clear(self):
+    def clear(self) -> Any:
         """Clear all cache"""
         self._cache.clear()
 
@@ -39,7 +39,7 @@ class IntelligentCacheManager:
         return False, None, "Cache not available"
 
     def store_data(self, task_type: str, parameters: Dict[str, Any],
-                  tags: List[str], data: Dict[str, Any], confidence: float):
+                  tags: List[str], data: Dict[str, Any], confidence: float) -> Any:
         """Store data in cache"""
         pass
 
@@ -51,6 +51,6 @@ class IntelligentCacheManager:
         """Get cache statistics"""
         return {"total_accesses": 0, "hits": 0, "misses": 0}
 
-    def invalidate_cache(self, task_type: Optional[str] = None):
+    def invalidate_cache(self, task_type: Optional[str] = None) -> Any:
         """Invalidate cache"""
         pass

@@ -108,13 +108,13 @@ class OnboardingState:
     started_at: Optional[str] = None
     completed_at: Optional[str] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> Any:
         if self.completed_steps is None:
             self.completed_steps = []
         if self.started_at is None:
             self.started_at = datetime.utcnow().isoformat()
 
-    def mark_step_complete(self, step: WizardStep):
+    def mark_step_complete(self, step: WizardStep) -> Any:
         """Mark a step as completed"""
         if step not in self.completed_steps:
             self.completed_steps.append(step)
@@ -155,7 +155,7 @@ class OnboardingState:
 class CustomerSuccessOnboardingWizard:
     """Interactive onboarding wizard for Customer Success MCP"""
 
-    def __init__(self):
+    def __init__(self) -> Any:
         self.console = Console()
         self.state = OnboardingState()
         self.config_dir = Path.home() / ".config" / "cs-mcp"
@@ -167,7 +167,7 @@ class CustomerSuccessOnboardingWizard:
         # Load existing state if available
         self.load_state()
 
-    def save_state(self):
+    def save_state(self) -> Any:
         """Persist wizard state to disk"""
         try:
             with open(self.state_file, 'w') as f:
@@ -175,7 +175,7 @@ class CustomerSuccessOnboardingWizard:
         except Exception as e:
             self.console.print(f"[yellow]Warning: Could not save state: {e}[/yellow]")
 
-    def load_state(self):
+    def load_state(self) -> Any:
         """Load wizard state from disk"""
         if self.state_file.exists():
             try:
@@ -186,14 +186,14 @@ class CustomerSuccessOnboardingWizard:
             except Exception as e:
                 self.console.print(f"[yellow]Warning: Could not load state: {e}[/yellow]")
 
-    def clear_screen(self):
+    def clear_screen(self) -> Any:
         """Clear the terminal screen using ANSI escape codes"""
         # Use ANSI escape codes instead of os.system() to avoid command injection risk
         # \033[2J - Clear entire screen
         # \033[H - Move cursor to home position (0,0)
         print('\033[2J\033[H', end='')
 
-    def print_header(self, title: str, subtitle: str = ""):
+    def print_header(self, title: str, subtitle: str = "") -> Any:
         """Print a formatted header"""
         self.console.print()
         self.console.print(Panel(
@@ -203,7 +203,7 @@ class CustomerSuccessOnboardingWizard:
         ))
         self.console.print()
 
-    def print_progress(self):
+    def print_progress(self) -> Any:
         """Print overall wizard progress"""
         total_steps = len(WizardStep)
         completed = len(self.state.completed_steps)
@@ -654,7 +654,7 @@ class CustomerSuccessOnboardingWizard:
 
         return Confirm.ask("[bold]Apply this configuration?[/bold]", default=True)
 
-    def _apply_security_config(self, config: Dict[str, Any]):
+    def _apply_security_config(self, config: Dict[str, Any]) -> Any:
         """Apply security configuration to .env and state"""
         self._update_env_file('ENCRYPTION_KEY', config['encryption_key'])
         self._update_env_file('JWT_SECRET', config['jwt_secret'])
@@ -667,7 +667,7 @@ class CustomerSuccessOnboardingWizard:
         os.environ['MASTER_PASSWORD'] = config['master_password']
         os.environ['ENCRYPTION_KEY'] = config['encryption_key']
 
-    def _apply_platform_config(self, platforms: Dict[str, Dict[str, str]]):
+    def _apply_platform_config(self, platforms: Dict[str, Dict[str, str]]) -> Any:
         """Apply platform integration credentials"""
         # Initialize credential manager
         if SecureCredentialManager:
@@ -690,7 +690,7 @@ class CustomerSuccessOnboardingWizard:
             # Update state
             setattr(self.state, f"{platform}_configured", True)
 
-    def _apply_cs_config(self, config: Dict[str, Any]):
+    def _apply_cs_config(self, config: Dict[str, Any]) -> Any:
         """Apply customer success configuration"""
         # Save weights
         for factor, weight in config['weights'].items():
@@ -1373,7 +1373,7 @@ class CustomerSuccessOnboardingWizard:
         self.console.print("[green]Freshdesk configured successfully! ✓[/green]")
         return True
 
-    def _update_env_file(self, key: str, value: str):
+    def _update_env_file(self, key: str, value: str) -> Any:
         """Update or add a key-value pair in .env file"""
         env_lines = []
         key_found = False
@@ -2046,7 +2046,7 @@ class CustomerSuccessOnboardingWizard:
     # MAIN WIZARD FLOW
     # ========================================================================
 
-    def run(self):
+    def run(self) -> Any:
         """Run the complete onboarding wizard"""
         try:
             # Select interaction mode (if not already set)
@@ -2118,7 +2118,7 @@ class CustomerSuccessOnboardingWizard:
 # CLI ENTRY POINT
 # ============================================================================
 
-def main():
+def main() -> Any:
     """Main entry point for the onboarding wizard"""
     wizard = CustomerSuccessOnboardingWizard()
     wizard.run()

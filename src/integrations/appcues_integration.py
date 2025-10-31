@@ -48,7 +48,7 @@ class AppcuesIntegration(BaseIntegration):
         credentials: Dict[str, str],
         rate_limit_calls: int = 100,
         rate_limit_window: int = 360
-    ):
+    ) -> Any:
         """
         Initialize Appcues integration.
 
@@ -912,7 +912,7 @@ class AppcuesIntegration(BaseIntegration):
             params=params
         )
 
-    async def close(self):
+    async def close(self) -> Any:
         """Close HTTP session."""
         if self.session and not self.session.closed:
             await self.session.close()

@@ -590,7 +590,7 @@ def validate_input(data: Dict[str, Any], model_class: type[BaseModel]) -> BaseMo
         raise
 
 
-def test_input_validation():
+def test_input_validation() -> Any:
     """Test input validation system."""
     print("Test 1: Valid client ID...")
     try:

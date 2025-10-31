@@ -47,7 +47,7 @@ class CatalystIntegration(BaseIntegration):
         credentials: Dict[str, str],
         rate_limit_calls: int = 90,
         rate_limit_window: int = 60
-    ):
+    ) -> Any:
         """
         Initialize Catalyst integration.
 
@@ -993,7 +993,7 @@ class CatalystIntegration(BaseIntegration):
             limit=limit
         )
 
-    async def close(self):
+    async def close(self) -> Any:
         """Close HTTP session."""
         if self.session and not self.session.closed:
             await self.session.close()

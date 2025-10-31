@@ -112,7 +112,7 @@ class PreferenceManager:
         storage_path: Optional[Path] = None,
         confidence_decay_days: int = 30,
         min_confidence_threshold: float = 0.3
-    ):
+    ) -> Any:
         """
         Initialize preference manager.
 
@@ -159,7 +159,7 @@ class PreferenceManager:
             return None
         return self.storage_path / f"{self.client_id}_events.json"
 
-    def _load_from_disk(self):
+    def _load_from_disk(self) -> Any:
         """Load preferences and events from disk."""
         try:
             # Load preferences using safe file operations
@@ -192,7 +192,7 @@ class PreferenceManager:
         except Exception as e:
             logger.error("load_from_disk_failed", error=str(e))
 
-    def _save_to_disk(self):
+    def _save_to_disk(self) -> Any:
         """Save preferences and events to disk."""
         try:
             # Save preferences
@@ -576,7 +576,7 @@ class PreferenceManager:
             logger.error("infer_preferences_failed", error=str(e))
             return {}
 
-    async def _apply_confidence_decay(self):
+    async def _apply_confidence_decay(self) -> Any:
         """Apply time-based confidence decay to old preferences."""
         try:
             now = datetime.utcnow()
@@ -631,13 +631,13 @@ class PreferenceManager:
             return {}
 
 
-def test_preference_manager():
+def test_preference_manager() -> Any:
     """Test preference manager."""
     import asyncio
     import tempfile
     import shutil
 
-    async def run_tests():
+    async def run_tests() -> Any:
         # Create temp directory
         temp_dir = Path(tempfile.mkdtemp())
 

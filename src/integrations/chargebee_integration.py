@@ -48,7 +48,7 @@ class ChargebeeIntegration(BaseIntegration):
         credentials: Dict[str, str],
         rate_limit_calls: int = 100,
         rate_limit_window: int = 60
-    ):
+    ) -> Any:
         """
         Initialize Chargebee integration.
 
@@ -944,7 +944,7 @@ class ChargebeeIntegration(BaseIntegration):
 
         return result.get('estimate', {})
 
-    async def close(self):
+    async def close(self) -> Any:
         """Close HTTP session."""
         if self.session and not self.session.closed:
             await self.session.close()

@@ -135,13 +135,13 @@ class ToolStats:
 class PerformanceMonitor:
     """Central performance monitoring system"""
 
-    def __init__(self):
+    def __init__(self) -> Any:
         self.tool_stats: Dict[str, ToolStats] = defaultdict(ToolStats)
         self.recent_metrics: deque = deque(maxlen=10000)  # Keep last 10k metrics
         self.start_time = time.time()
         self.process = psutil.Process()
 
-    def record_metric(self, metric: PerformanceMetric):
+    def record_metric(self, metric: PerformanceMetric) -> Any:
         """Record a performance metric"""
         tool_name = metric.tool_name
 
@@ -169,7 +169,7 @@ class PerformanceMonitor:
         # Check thresholds and log warnings
         self._check_thresholds(metric, stats)
 
-    def _check_thresholds(self, metric: PerformanceMetric, stats: ToolStats):
+    def _check_thresholds(self, metric: PerformanceMetric, stats: ToolStats) -> Any:
         """Check if metric exceeds thresholds"""
         # Check latency
         if metric.duration_ms > THRESHOLDS['critical_latency_ms']:
@@ -287,7 +287,7 @@ class PerformanceMonitor:
         )
         return [s.to_dict() for s in sorted_stats[:limit]]
 
-    def reset_stats(self):
+    def reset_stats(self) -> Any:
         """Reset all statistics"""
         self.tool_stats.clear()
         self.recent_metrics.clear()
@@ -299,17 +299,17 @@ class PerformanceMonitor:
 # Performance Tracking Decorator
 # ============================================================================
 
-def track_performance(tool_name: Optional[str] = None):
+def track_performance(tool_name: Optional[str] = None) -> Any:
     """
     Decorator to track performance of MCP tools.
 
     Usage:
         @track_performance()
-        async def my_tool(ctx, ...):
+        async def my_tool(ctx, ...) -> Any:
             ...
 
         @track_performance(tool_name="custom_name")
-        async def my_tool(ctx, ...):
+        async def my_tool(ctx, ...) -> Any:
             ...
     """
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
@@ -322,7 +322,7 @@ def track_performance(tool_name: Optional[str] = None):
             try:
                 process = psutil.Process()
                 memory_before = process.memory_info().rss / (1024 * 1024)  # MB
-            except:
+            except Exception as e:
                 memory_before = None
 
             start_time = time.time()
@@ -346,7 +346,7 @@ def track_performance(tool_name: Optional[str] = None):
                 try:
                     memory_after = process.memory_info().rss / (1024 * 1024)  # MB
                     memory_delta = memory_after - memory_before if memory_before else None
-                except:
+                except Exception as e:
                     memory_delta = None
 
                 # Record metric
@@ -395,7 +395,7 @@ def get_performance_monitor() -> PerformanceMonitor:
     return _performance_monitor
 
 
-def reset_performance_monitor():
+def reset_performance_monitor() -> Any:
     """Reset the global performance monitor"""
     global _performance_monitor
     if _performance_monitor:

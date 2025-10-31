@@ -17,7 +17,7 @@ from src.monitoring.performance_monitor import metrics_handler, PROMETHEUS_AVAIL
 class MetricsHandler(BaseHTTPRequestHandler):
     """HTTP request handler for Prometheus metrics endpoint"""
 
-    def do_GET(self):
+    def do_GET(self) -> Any:
         """Handle GET requests"""
         if self.path == '/metrics':
             self.serve_metrics()
@@ -26,7 +26,7 @@ class MetricsHandler(BaseHTTPRequestHandler):
         else:
             self.send_error(404, "Not Found")
 
-    def serve_metrics(self):
+    def serve_metrics(self) -> Any:
         """Serve Prometheus metrics"""
         try:
             if not PROMETHEUS_AVAILABLE:
@@ -53,14 +53,14 @@ class MetricsHandler(BaseHTTPRequestHandler):
             logger.error("Failed to serve metrics", error=str(e))
             self.send_error(500, "Internal Server Error")
 
-    def serve_health(self):
+    def serve_health(self) -> Any:
         """Serve simple health check"""
         self.send_response(200)
         self.send_header('Content-type', 'text/plain')
         self.end_headers()
         self.wfile.write(b"OK\n")
 
-    def log_message(self, format, *args):
+    def log_message(self, format, *args) -> Any:
         """Override to use structlog"""
         logger.debug("HTTP request", message=format % args)
 
@@ -68,13 +68,13 @@ class MetricsHandler(BaseHTTPRequestHandler):
 class MetricsServer:
     """Metrics HTTP server manager"""
 
-    def __init__(self, port: int = 9090, host: str = '0.0.0.0'):
+    def __init__(self, port: int = 9090, host: str = '0.0.0.0') -> Any:
         self.port = port
         self.host = host
         self.server: Optional[HTTPServer] = None
         self.thread: Optional[threading.Thread] = None
 
-    def start(self):
+    def start(self) -> Any:
         """Start metrics server in background thread"""
         if not PROMETHEUS_AVAILABLE:
             logger.warning(
@@ -99,7 +99,7 @@ class MetricsServer:
         except Exception as e:
             logger.error("Failed to start metrics server", error=str(e))
 
-    def stop(self):
+    def stop(self) -> Any:
         """Stop metrics server"""
         if self.server:
             self.server.shutdown()
@@ -121,13 +121,13 @@ def get_metrics_server(port: int = 9090, host: str = '0.0.0.0') -> MetricsServer
     return _metrics_server
 
 
-def start_metrics_server(port: int = 9090, host: str = '0.0.0.0'):
+def start_metrics_server(port: int = 9090, host: str = '0.0.0.0') -> Any:
     """Start the global metrics server"""
     server = get_metrics_server(port=port, host=host)
     server.start()
 
 
-def stop_metrics_server():
+def stop_metrics_server() -> Any:
     """Stop the global metrics server"""
     global _metrics_server
     if _metrics_server:
