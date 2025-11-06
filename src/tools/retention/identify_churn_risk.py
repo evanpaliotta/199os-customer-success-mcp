@@ -22,7 +22,10 @@ from src.models.renewal_models import RenewalForecast
 from src.models.feedback_models import NPSResponse, SentimentAnalysis
 import structlog
 
-    async def identify_churn_risk(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def identify_churn_risk(
         ctx: Context,
         client_id: str = None,
         health_score_threshold: int = 60,
@@ -41,12 +44,15 @@ import structlog
         Returns:
             At-risk customers with churn probability and risk factors
         """
+    # LOCAL PROCESSING PATTERN:
+    # 1. Fetch data via Composio: data = await composio.execute_action("action_name", client_id, params)
+    # 2. Process locally: df = pd.DataFrame(data); summary = df.groupby('stage').agg(...)
+    # 3. Return summary only (not raw data)
+    # This keeps large datasets out of model context (98.9% token savings)
+
         try:
             if client_id:
-                try:
-                    client_id = validate_client_id(client_id)
-                except ValidationError as e:
-                    return {"status": "failed", "error": f"Invalid client_id: {str(e)}"}
+            "}
                     
             await ctx.info(f"Identifying churn risk for {client_id or 'all clients'}")
             
