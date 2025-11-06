@@ -37,8 +37,6 @@ from datetime import datetime, timedelta
 from enum import Enum
 from pydantic import BaseModel, Field, EmailStr, field_validator
 from src.security.input_validation import validate_client_id, ValidationError
-from src.integrations.sendgrid_client import SendGridClient
-from src.integrations.intercom_client import IntercomClient
 import structlog
 from src.decorators import mcp_tool
 from src.composio import get_composio_client
