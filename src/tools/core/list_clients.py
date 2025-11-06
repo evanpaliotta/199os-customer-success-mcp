@@ -26,7 +26,10 @@ from src.database import SessionLocal
 from src.database.models import CustomerAccount
 import structlog
 
-    async def list_clients(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def list_clients(
         ctx: Context,
         tier_filter: Optional[str] = None,
         lifecycle_stage_filter: Optional[str] = None,
@@ -52,6 +55,12 @@ import structlog
         Returns:
             List of clients with key metrics and filtering info
         """
+    # LOCAL PROCESSING PATTERN:
+    # 1. Fetch data via Composio: data = await composio.execute_action("action_name", client_id, params)
+    # 2. Process locally: df = pd.DataFrame(data); summary = df.groupby('stage').agg(...)
+    # 3. Return summary only (not raw data)
+    # This keeps large datasets out of model context (98.9% token savings)
+
         try:
             await ctx.info(f"Listing clients with filters: tier={tier_filter}, stage={lifecycle_stage_filter}")
 

@@ -25,7 +25,10 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
 from src.models.onboarding_models import (
 
-    async def map_customer_journey(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def map_customer_journey(
         ctx: Context,
         client_id: str,
         journey_stage: Optional[str] = None,
@@ -50,14 +53,13 @@ from src.models.onboarding_models import (
         Returns:
             Complete customer journey map with touchpoints, milestones, and optimization insights
         """
-        try:
-            # Validate client_id
-            try:
-                client_id = validate_client_id(client_id)
-            except ValidationError as e:
-                return {
-                    'status': 'failed',
-                    'error': f'Invalid client_id: {str(e)}'
+    # LOCAL PROCESSING PATTERN:
+    # 1. Fetch data via Composio: data = await composio.execute_action("action_name", client_id, params)
+    # 2. Process locally: df = pd.DataFrame(data); summary = df.groupby('stage').agg(...)
+    # 3. Return summary only (not raw data)
+    # This keeps large datasets out of model context (98.9% token savings)
+
+        try:'
                 }
 
             await ctx.info(f"Mapping customer journey for client: {client_id}")

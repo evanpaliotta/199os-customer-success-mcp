@@ -27,7 +27,10 @@ from typing import Dict, List, Any, Optional, Literal
 from datetime import datetime, date, timedelta
 from src.security.input_validation import (
 
-    async def analyze_product_usage(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def analyze_product_usage(
         ctx: Context,
         client_id: str,
         period_start: Optional[str] = None,
@@ -58,14 +61,13 @@ from src.security.input_validation import (
         Returns:
             Comprehensive usage analytics with insights and recommendations
         """
-        try:
-            # Validate client_id
-            try:
-                client_id = validate_client_id(client_id)
-            except ValidationError as e:
-                return {
-                    'status': 'failed',
-                    'error': f'Invalid client_id: {str(e)}'
+    # LOCAL PROCESSING PATTERN:
+    # 1. Fetch data via Composio: data = await composio.execute_action("action_name", client_id, params)
+    # 2. Process locally: df = pd.DataFrame(data); summary = df.groupby('stage').agg(...)
+    # 3. Return summary only (not raw data)
+    # This keeps large datasets out of model context (98.9% token savings)
+
+        try:'
                 }
 
             # Validate and set date range

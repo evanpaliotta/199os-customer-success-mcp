@@ -38,7 +38,10 @@ import re
 import structlog
 from src.models.support_models import (
 
-    async def analyze_support_performance(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def analyze_support_performance(
         ctx: Context,
         client_id: Optional[str] = None,
         analysis_type: str = "overview",
@@ -79,16 +82,9 @@ from src.models.support_models import (
             Comprehensive analytics with metrics, trends, insights, and recommendations
         """
         try:
-            await ctx.info(f"Analyzing support performance: {analysis_type}")
-
-            # Validate client_id if provided
+            await ctx.info(f"Analyzing support performance: {analysis_type}")if provided
             if client_id:
-                try:
-                    client_id = validate_client_id(client_id)
-                except ValidationError as e:
-                    return {
-                        'status': 'failed',
-                        'error': f'Invalid client_id: {str(e)}'
+            '
                     }
 
             period_start = datetime.now() - timedelta(days=period_days)

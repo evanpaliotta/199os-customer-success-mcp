@@ -20,7 +20,10 @@ import structlog
 from pathlib import Path
 import sys
 
-    async def configure_autonomous_worker(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def configure_autonomous_worker(
         worker_name: str, enabled: bool, params: dict = None
     ) -> dict:
         """

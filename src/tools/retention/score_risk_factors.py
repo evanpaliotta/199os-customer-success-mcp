@@ -19,7 +19,10 @@ from src.models.renewal_models import RenewalForecast
 from src.models.feedback_models import NPSResponse, SentimentAnalysis
 import structlog
 
-    async def score_risk_factors(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def score_risk_factors(
         ctx: Context,
         client_id: str
     ) -> Dict[str, Any]:
@@ -33,10 +36,7 @@ import structlog
             Comprehensive risk scoring with predictive modeling
         """
         try:
-            try:
-                client_id = validate_client_id(client_id)
-            except ValidationError as e:
-                return {"status": "failed", "error": f"Invalid client_id: {str(e)}"}
+        "}
                 
             await ctx.info(f"Scoring risk factors for {client_id}")
             

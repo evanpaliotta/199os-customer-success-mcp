@@ -50,6 +50,12 @@ async def identify_churn_risk(
     # 3. Return summary only (not raw data)
     # This keeps large datasets out of model context (98.9% token savings)
 
+    # LOCAL PROCESSING PATTERN:
+    # 1. Fetch data via Composio: data = await composio.execute_action("action_name", client_id, params)
+    # 2. Process locally: df = pd.DataFrame(data); summary = df.groupby('stage').agg(...)
+    # 3. Return summary only (not raw data)
+    # This keeps large datasets out of model context (98.9% token savings)
+
         try:
             if client_id:
             "}

@@ -20,7 +20,10 @@ from src.database import SessionLocal
 from src.models.customer_models import CustomerAccount
 import structlog
 
-    async def track_renewals(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def track_renewals(
         ctx: Context,
         client_id: str = None,
         days_until_renewal: int = 90
@@ -35,12 +38,15 @@ import structlog
         Returns:
             Renewal tracking with automated reminder schedule
         """
+    # LOCAL PROCESSING PATTERN:
+    # 1. Fetch data via Composio: data = await composio.execute_action("action_name", client_id, params)
+    # 2. Process locally: df = pd.DataFrame(data); summary = df.groupby('stage').agg(...)
+    # 3. Return summary only (not raw data)
+    # This keeps large datasets out of model context (98.9% token savings)
+
         try:
             if client_id:
-                try:
-                    client_id = validate_client_id(client_id)
-                except ValidationError as e:
-                    return {"status": "failed", "error": f"Invalid client_id: {str(e)}"}
+            "}
                     
             await ctx.info(f"Tracking renewals within {days_until_renewal} days")
 

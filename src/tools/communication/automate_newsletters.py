@@ -47,7 +47,10 @@ from src.integrations.sendgrid_client import SendGridClient
 from src.integrations.intercom_client import IntercomClient
 import structlog
 
-    async def automate_newsletters(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def automate_newsletters(
         ctx: Context,
         action: Literal[
             "create_newsletter", "schedule_newsletter", "get_newsletter",
@@ -521,15 +524,7 @@ import structlog
                     return {
                         'status': 'failed',
                         'error': 'manage_subscriptions requires client_id and subscription_action'
-                    }
-
-                # Validate client_id
-                try:
-                    client_id = validate_client_id(client_id)
-                except ValidationError as e:
-                    return {
-                        'status': 'failed',
-                        'error': f'Invalid client_id: {str(e)}'
+                    }'
                     }
 
                 if subscription_action == "subscribe":

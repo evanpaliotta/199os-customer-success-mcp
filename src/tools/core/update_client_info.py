@@ -22,7 +22,10 @@ from src.database import SessionLocal
 from src.database.models import CustomerAccount
 import structlog
 
-    async def update_client_info(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def update_client_info(
         ctx: Context,
         client_id: str,
         updates: Dict[str, Any]
@@ -40,14 +43,7 @@ import structlog
         Returns:
             Updated client record with confirmation
         """
-        try:
-            # Validate client_id
-            try:
-                client_id = validate_client_id(client_id)
-            except ValidationError as e:
-                return {
-                    'status': 'failed',
-                    'error': f'Invalid client_id: {str(e)}'
+        try:'
                 }
 
             await ctx.info(f"Updating client info for: {client_id}")

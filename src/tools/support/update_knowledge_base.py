@@ -40,7 +40,10 @@ import re
 import structlog
 from src.models.support_models import (
 
-    async def update_knowledge_base(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def update_knowledge_base(
         ctx: Context,
         article_id: str,
         action: str = "update",

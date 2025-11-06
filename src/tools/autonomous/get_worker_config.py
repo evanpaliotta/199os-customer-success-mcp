@@ -21,7 +21,10 @@ import structlog
 from pathlib import Path
 import sys
 
-    async def get_worker_config(worker_name: str) -> dict:
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def get_worker_config(worker_name: str) -> dict:
         """
         Get configuration for a specific worker
 

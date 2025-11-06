@@ -22,7 +22,10 @@ from src.models.renewal_models import RenewalForecast
 from src.models.feedback_models import NPSResponse, SentimentAnalysis
 import structlog
 
-    async def manage_escalations(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def manage_escalations(
         ctx: Context,
         action: str = "list",
         escalation_id: str = None,
@@ -43,10 +46,7 @@ import structlog
         """
         try:
             if client_id:
-                try:
-                    client_id = validate_client_id(client_id)
-                except ValidationError as e:
-                    return {"status": "failed", "error": f"Invalid client_id: {str(e)}"}
+            "}
                     
             await ctx.info(f"Managing escalation: {action}")
             

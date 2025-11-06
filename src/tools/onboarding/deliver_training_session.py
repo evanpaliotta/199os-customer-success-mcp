@@ -28,7 +28,10 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
 from src.models.onboarding_models import (
 
-    async def deliver_training_session(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def deliver_training_session(
         ctx: Context,
         client_id: str,
         training_module_id: str,
@@ -57,14 +60,7 @@ from src.models.onboarding_models import (
         Returns:
             Training session details with attendance, engagement, and assessment results
         """
-        try:
-            # Validate client_id
-            try:
-                client_id = validate_client_id(client_id)
-            except ValidationError as e:
-                return {
-                    'status': 'failed',
-                    'error': f'Invalid client_id: {str(e)}'
+        try:'
                 }
 
             await ctx.info(f"Delivering training session for client: {client_id}")

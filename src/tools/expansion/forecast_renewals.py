@@ -20,7 +20,10 @@ from src.database import SessionLocal
 from src.models.customer_models import CustomerAccount
 import structlog
 
-    async def forecast_renewals(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def forecast_renewals(
         ctx: Context,
         forecast_period_days: int = 180,
         include_risk_analysis: bool = True

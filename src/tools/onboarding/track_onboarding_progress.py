@@ -24,7 +24,10 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
 from src.models.onboarding_models import (
 
-    async def track_onboarding_progress(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def track_onboarding_progress(
         ctx: Context,
         client_id: str,
         plan_id: Optional[str] = None,
@@ -47,14 +50,7 @@ from src.models.onboarding_models import (
         Returns:
             Comprehensive onboarding progress report with metrics and recommendations
         """
-        try:
-            # Validate client_id
-            try:
-                client_id = validate_client_id(client_id)
-            except ValidationError as e:
-                return {
-                    'status': 'failed',
-                    'error': f'Invalid client_id: {str(e)}'
+        try:'
                 }
 
             await ctx.info(f"Tracking onboarding progress for client: {client_id}")

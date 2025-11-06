@@ -28,7 +28,10 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
 from src.models.onboarding_models import (
 
-    async def create_onboarding_plan(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def create_onboarding_plan(
         ctx: Context,
         client_id: str,
         customer_goals: List[str],
@@ -57,14 +60,7 @@ from src.models.onboarding_models import (
         Returns:
             Customized onboarding plan with milestones, timelines, and success metrics
         """
-        try:
-            # Validate client_id
-            try:
-                client_id = validate_client_id(client_id)
-            except ValidationError as e:
-                return {
-                    'status': 'failed',
-                    'error': f'Invalid client_id: {str(e)}'
+        try:'
                 }
 
             await ctx.info(f"Creating onboarding plan for client: {client_id}")

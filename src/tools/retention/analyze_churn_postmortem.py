@@ -20,7 +20,10 @@ from src.models.renewal_models import RenewalForecast
 from src.models.feedback_models import NPSResponse, SentimentAnalysis
 import structlog
 
-    async def analyze_churn_postmortem(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def analyze_churn_postmortem(
         ctx: Context,
         client_id: str,
         churn_date: str
@@ -36,10 +39,7 @@ import structlog
             Churn analysis with lessons learned
         """
         try:
-            try:
-                client_id = validate_client_id(client_id)
-            except ValidationError as e:
-                return {"status": "failed", "error": f"Invalid client_id: {str(e)}"}
+        "}
                 
             await ctx.info(f"Analyzing churn for {client_id}")
             

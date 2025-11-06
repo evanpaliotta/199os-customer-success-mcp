@@ -26,7 +26,10 @@ from src.database import SessionLocal
 from src.database.models import CustomerAccount
 import structlog
 
-    async def get_client_timeline(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def get_client_timeline(
         ctx: Context,
         client_id: str,
         start_date: Optional[str] = None,
@@ -51,14 +54,7 @@ import structlog
         Returns:
             Chronological timeline of events with details and insights
         """
-        try:
-            # Validate client_id
-            try:
-                client_id = validate_client_id(client_id)
-            except ValidationError as e:
-                return {
-                    'status': 'failed',
-                    'error': f'Invalid client_id: {str(e)}'
+        try:'
                 }
 
             await ctx.info(f"Fetching timeline for client: {client_id}")

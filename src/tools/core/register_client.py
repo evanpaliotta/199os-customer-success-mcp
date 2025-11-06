@@ -29,7 +29,10 @@ from src.database import SessionLocal
 from src.database.models import CustomerAccount
 import structlog
 
-    async def register_client(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def register_client(
         ctx: Context,
         client_name: str,
         company_name: str,

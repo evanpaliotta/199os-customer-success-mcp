@@ -20,7 +20,10 @@ from src.database import SessionLocal
 from src.models.customer_models import CustomerAccount
 import structlog
 
-    async def negotiate_renewals(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def negotiate_renewals(
         ctx: Context,
         client_id: str,
         negotiation_strategy: str = "value_reinforcement"
@@ -36,10 +39,7 @@ import structlog
             Negotiation support materials and recommendations
         """
         try:
-            try:
-                client_id = validate_client_id(client_id)
-            except ValidationError as e:
-                return {"status": "failed", "error": f"Invalid client_id: {str(e)}"}
+        "}
                 
             await ctx.info(f"Preparing renewal negotiation for {client_id}")
             

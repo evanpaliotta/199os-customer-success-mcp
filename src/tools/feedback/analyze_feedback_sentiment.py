@@ -27,7 +27,10 @@ from typing import Dict, List, Any, Optional, Literal
 from datetime import datetime, date, timedelta
 from src.security.input_validation import (
 
-    async def analyze_feedback_sentiment(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def analyze_feedback_sentiment(
         ctx: Context,
         client_id: Optional[str] = None,
         period_start: Optional[str] = None,
@@ -71,16 +74,9 @@ from src.security.input_validation import (
                 return {
                     'status': 'failed',
                     'error': f'Date validation error: {str(e)}'
-                }
-
-            # Validate client_id if provided
+                }if provided
             if client_id:
-                try:
-                    client_id = validate_client_id(client_id)
-                except ValidationError as e:
-                    return {
-                        'status': 'failed',
-                        'error': f'Invalid client_id: {str(e)}'
+            '
                     }
 
             scope = f"client {client_id}" if client_id else "company-wide"

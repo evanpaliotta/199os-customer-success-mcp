@@ -20,7 +20,10 @@ from src.database import SessionLocal
 from src.models.customer_models import CustomerAccount
 import structlog
 
-    async def track_revenue_expansion(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def track_revenue_expansion(
         ctx: Context,
         time_period: str = "quarterly",
         include_pipeline: bool = True

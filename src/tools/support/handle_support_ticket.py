@@ -49,7 +49,10 @@ import re
 import structlog
 from src.models.support_models import (
 
-    async def handle_support_ticket(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def handle_support_ticket(
         ctx: Context,
         ticket_id: Optional[str] = None,
         action: str = "create",
@@ -130,15 +133,7 @@ from src.models.support_models import (
                     return {
                         'status': 'failed',
                         'error': 'Missing required fields: client_id, subject, description, requester_email, requester_name'
-                    }
-
-                # Validate client_id
-                try:
-                    client_id = validate_client_id(client_id)
-                except ValidationError as e:
-                    return {
-                        'status': 'failed',
-                        'error': f'Invalid client_id: {str(e)}'
+                    }'
                     }
 
                 # Validate and sanitize inputs

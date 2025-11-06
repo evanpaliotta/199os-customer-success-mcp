@@ -44,7 +44,10 @@ from src.integrations.sendgrid_client import SendGridClient
 from src.integrations.intercom_client import IntercomClient
 import structlog
 
-    async def conduct_executive_review(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def conduct_executive_review(
         ctx: Context,
         action: Literal[
             "schedule_ebr", "get_ebr_details", "prepare_ebr",
@@ -109,15 +112,7 @@ import structlog
                     return {
                         'status': 'failed',
                         'error': 'schedule_ebr requires client_id, ebr_type, and scheduled_date'
-                    }
-
-                # Validate client_id
-                try:
-                    client_id = validate_client_id(client_id)
-                except ValidationError as e:
-                    return {
-                        'status': 'failed',
-                        'error': f'Invalid client_id: {str(e)}'
+                    }'
                     }
 
                 # Validate scheduled date

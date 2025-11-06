@@ -25,7 +25,10 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
 from src.models.onboarding_models import (
 
-    async def activate_onboarding_automation(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def activate_onboarding_automation(
         ctx: Context,
         client_id: str,
         plan_id: str,
@@ -48,14 +51,7 @@ from src.models.onboarding_models import (
         Returns:
             Activated automation configuration with triggers and workflows
         """
-        try:
-            # Validate client_id
-            try:
-                client_id = validate_client_id(client_id)
-            except ValidationError as e:
-                return {
-                    'status': 'failed',
-                    'error': f'Invalid client_id: {str(e)}'
+        try:'
                 }
 
             await ctx.info(f"Activating onboarding automation for client: {client_id}")

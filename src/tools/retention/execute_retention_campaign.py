@@ -21,7 +21,10 @@ from src.models.renewal_models import RenewalForecast
 from src.models.feedback_models import NPSResponse, SentimentAnalysis
 import structlog
 
-    async def execute_retention_campaign(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def execute_retention_campaign(
         ctx: Context,
         client_id: str,
         campaign_type: str = "proactive_outreach",
@@ -39,10 +42,7 @@ import structlog
             Campaign execution status and tracking
         """
         try:
-            try:
-                client_id = validate_client_id(client_id)
-            except ValidationError as e:
-                return {"status": "failed", "error": f"Invalid client_id: {str(e)}"}
+        "}
                 
             await ctx.info(f"Executing retention campaign for {client_id}")
             

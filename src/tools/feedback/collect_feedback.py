@@ -32,7 +32,10 @@ from typing import Dict, List, Any, Optional, Literal
 from datetime import datetime, date, timedelta
 from src.security.input_validation import (
 
-    async def collect_feedback(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def collect_feedback(
         ctx: Context,
         client_id: str,
         feedback_type: Literal[
@@ -78,9 +81,7 @@ from src.security.input_validation import (
         """
         try:
             # Validate inputs
-            try:
-                client_id = validate_client_id(client_id)
-                submitter_email = validate_email(submitter_email)
+            try:submitter_email = validate_email(submitter_email)
             except ValidationError as e:
                 return {
                     'status': 'failed',

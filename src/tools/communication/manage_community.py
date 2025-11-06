@@ -39,7 +39,10 @@ from src.integrations.sendgrid_client import SendGridClient
 from src.integrations.intercom_client import IntercomClient
 import structlog
 
-    async def manage_community(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def manage_community(
         ctx: Context,
         action: Literal[
             "create_community", "add_member", "get_member_profile",
@@ -151,15 +154,7 @@ import structlog
                     return {
                         'status': 'failed',
                         'error': 'add_member requires client_id, user_email, and user_name'
-                    }
-
-                # Validate client_id
-                try:
-                    client_id = validate_client_id(client_id)
-                except ValidationError as e:
-                    return {
-                        'status': 'failed',
-                        'error': f'Invalid client_id: {str(e)}'
+                    }'
                     }
 
                 # Generate member ID

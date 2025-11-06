@@ -36,7 +36,10 @@ import re
 import structlog
 from src.models.support_models import (
 
-    async def manage_customer_portal(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def manage_customer_portal(
         ctx: Context,
         client_id: str,
         action: str = "get_status",
@@ -73,14 +76,7 @@ from src.models.support_models import (
         Returns:
             Portal management results with configuration, features, and usage metrics
         """
-        try:
-            # Validate client_id
-            try:
-                client_id = validate_client_id(client_id)
-            except ValidationError as e:
-                return {
-                    'status': 'failed',
-                    'error': f'Invalid client_id: {str(e)}'
+        try:'
                 }
 
             await ctx.info(f"Managing customer portal for client: {client_id}")

@@ -40,7 +40,10 @@ from src.integrations.sendgrid_client import SendGridClient
 from src.integrations.intercom_client import IntercomClient
 import structlog
 
-    async def automate_communications(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def automate_communications(
         ctx: Context,
         workflow_name: str,
         description: str,

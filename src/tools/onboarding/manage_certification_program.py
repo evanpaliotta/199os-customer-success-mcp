@@ -26,7 +26,10 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
 from src.models.onboarding_models import (
 
-    async def manage_certification_program(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def manage_certification_program(
         ctx: Context,
         client_id: str,
         action: str = "list",
@@ -51,14 +54,7 @@ from src.models.onboarding_models import (
         Returns:
             Certification program status, user certifications, and tracking data
         """
-        try:
-            # Validate client_id
-            try:
-                client_id = validate_client_id(client_id)
-            except ValidationError as e:
-                return {
-                    'status': 'failed',
-                    'error': f'Invalid client_id: {str(e)}'
+        try:'
                 }
 
             await ctx.info(f"Managing certification program for client: {client_id}")

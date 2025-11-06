@@ -30,7 +30,10 @@ from typing import Dict, List, Any, Optional, Literal
 from datetime import datetime, date, timedelta
 from src.security.input_validation import (
 
-    async def manage_voice_of_customer(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def manage_voice_of_customer(
         ctx: Context,
         action: Literal[
             "create_voc_report", "track_feedback_loop", "measure_program_effectiveness",
@@ -90,16 +93,9 @@ from src.security.input_validation import (
                 return {
                     'status': 'failed',
                     'error': f'Date validation error: {str(e)}'
-                }
-
-            # Validate client_id if provided
+                }if provided
             if client_id:
-                try:
-                    client_id = validate_client_id(client_id)
-                except ValidationError as e:
-                    return {
-                        'status': 'failed',
-                        'error': f'Invalid client_id: {str(e)}'
+            '
                     }
 
             await ctx.info(f"Managing VoC program: {action}")

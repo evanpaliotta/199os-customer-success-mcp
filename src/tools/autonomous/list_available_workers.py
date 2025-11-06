@@ -15,7 +15,10 @@ import structlog
 from pathlib import Path
 import sys
 
-    async def list_available_workers() -> dict:
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def list_available_workers() -> dict:
         """
         List all available autonomous workers
 

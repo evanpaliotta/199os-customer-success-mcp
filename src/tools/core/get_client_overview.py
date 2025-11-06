@@ -22,7 +22,10 @@ from src.database import SessionLocal
 from src.database.models import CustomerAccount
 import structlog
 
-    async def get_client_overview(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def get_client_overview(
         ctx: Context,
         client_id: str
     ) -> Dict[str, Any]:
@@ -39,14 +42,7 @@ import structlog
         Returns:
             Complete client overview with health, engagement, support, and revenue data
         """
-        try:
-            # Validate client_id
-            try:
-                client_id = validate_client_id(client_id)
-            except ValidationError as e:
-                return {
-                    'status': 'failed',
-                    'error': f'Invalid client_id: {str(e)}'
+        try:'
                 }
 
             await ctx.info(f"Fetching overview for client: {client_id}")

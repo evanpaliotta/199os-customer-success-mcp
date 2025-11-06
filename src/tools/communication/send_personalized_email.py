@@ -46,7 +46,10 @@ from src.integrations.sendgrid_client import SendGridClient
 from src.integrations.intercom_client import IntercomClient
 import structlog
 
-    async def send_personalized_email(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def send_personalized_email(
         ctx: Context,
         campaign_name: str,
         template_type: Literal[

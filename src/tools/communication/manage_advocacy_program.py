@@ -41,7 +41,10 @@ from src.integrations.sendgrid_client import SendGridClient
 from src.integrations.intercom_client import IntercomClient
 import structlog
 
-    async def manage_advocacy_program(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def manage_advocacy_program(
         ctx: Context,
         action: Literal[
             "enroll_advocate", "get_advocate_profile", "list_advocates",
@@ -101,15 +104,7 @@ import structlog
                     return {
                         'status': 'failed',
                         'error': 'enroll_advocate requires client_id, contact_name, contact_email, and tier'
-                    }
-
-                # Validate client_id
-                try:
-                    client_id = validate_client_id(client_id)
-                except ValidationError as e:
-                    return {
-                        'status': 'failed',
-                        'error': f'Invalid client_id: {str(e)}'
+                    }'
                     }
 
                 # Generate advocate ID

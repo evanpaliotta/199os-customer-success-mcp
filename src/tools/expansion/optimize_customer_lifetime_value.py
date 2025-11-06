@@ -20,7 +20,10 @@ from src.database import SessionLocal
 from src.models.customer_models import CustomerAccount
 import structlog
 
-    async def optimize_customer_lifetime_value(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def optimize_customer_lifetime_value(
         ctx: Context,
         client_id: str = None,
         optimization_focus: str = "balanced"
@@ -37,10 +40,7 @@ import structlog
         """
         try:
             if client_id:
-                try:
-                    client_id = validate_client_id(client_id)
-                except ValidationError as e:
-                    return {"status": "failed", "error": f"Invalid client_id: {str(e)}"}
+            "}
                     
             await ctx.info(f"Optimizing CLV: {optimization_focus}")
             

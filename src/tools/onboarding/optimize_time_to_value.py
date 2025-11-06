@@ -25,7 +25,10 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
 from src.models.onboarding_models import (
 
-    async def optimize_time_to_value(
+    from src.decorators import mcp_tool
+from src.composio import get_composio_client
+
+async def optimize_time_to_value(
         ctx: Context,
         client_id: str,
         current_time_to_value_days: Optional[int] = None,
@@ -48,14 +51,7 @@ from src.models.onboarding_models import (
         Returns:
             TTV analysis, optimization strategies, and improvement initiatives
         """
-        try:
-            # Validate client_id
-            try:
-                client_id = validate_client_id(client_id)
-            except ValidationError as e:
-                return {
-                    'status': 'failed',
-                    'error': f'Invalid client_id: {str(e)}'
+        try:'
                 }
 
             await ctx.info(f"Optimizing time-to-value for client: {client_id}")
