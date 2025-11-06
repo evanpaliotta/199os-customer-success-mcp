@@ -57,7 +57,7 @@ async def map_customer_journey(
     # 3. Return summary only (not raw data)
     # This keeps large datasets out of model context (98.9% token savings)
 
-        try:'
+        
                 }
 
             await ctx.info(f"Mapping customer journey for client: {client_id}")

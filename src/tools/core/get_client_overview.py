@@ -40,7 +40,7 @@ async def get_client_overview(
         Returns:
             Complete client overview with health, engagement, support, and revenue data
         """
-        try:'
+        
                 }
 
             await ctx.info(f"Fetching overview for client: {client_id}")

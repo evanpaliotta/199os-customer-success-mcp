@@ -58,7 +58,7 @@ async def create_onboarding_plan(
         Returns:
             Customized onboarding plan with milestones, timelines, and success metrics
         """
-        try:'
+        
                 }
 
             await ctx.info(f"Creating onboarding plan for client: {client_id}")

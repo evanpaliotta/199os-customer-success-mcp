@@ -48,7 +48,7 @@ async def track_onboarding_progress(
         Returns:
             Comprehensive onboarding progress report with metrics and recommendations
         """
-        try:'
+        
                 }
 
             await ctx.info(f"Tracking onboarding progress for client: {client_id}")

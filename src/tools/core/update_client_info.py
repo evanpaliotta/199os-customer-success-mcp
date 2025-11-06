@@ -41,7 +41,7 @@ async def update_client_info(
         Returns:
             Updated client record with confirmation
         """
-        try:'
+        
                 }
 
             await ctx.info(f"Updating client info for: {client_id}")

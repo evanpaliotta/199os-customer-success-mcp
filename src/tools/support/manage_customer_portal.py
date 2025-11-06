@@ -74,7 +74,7 @@ async def manage_customer_portal(
         Returns:
             Portal management results with configuration, features, and usage metrics
         """
-        try:'
+        
                 }
 
             await ctx.info(f"Managing customer portal for client: {client_id}")

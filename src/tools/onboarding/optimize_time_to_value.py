@@ -49,7 +49,7 @@ async def optimize_time_to_value(
         Returns:
             TTV analysis, optimization strategies, and improvement initiatives
         """
-        try:'
+        
                 }
 
             await ctx.info(f"Optimizing time-to-value for client: {client_id}")

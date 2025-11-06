@@ -65,7 +65,7 @@ async def analyze_product_usage(
     # 3. Return summary only (not raw data)
     # This keeps large datasets out of model context (98.9% token savings)
 
-        try:'
+        
                 }
 
             # Validate and set date range

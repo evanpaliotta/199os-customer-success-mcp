@@ -52,7 +52,7 @@ async def get_client_timeline(
         Returns:
             Chronological timeline of events with details and insights
         """
-        try:'
+        
                 }
 
             await ctx.info(f"Fetching timeline for client: {client_id}")

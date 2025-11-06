@@ -52,7 +52,7 @@ async def manage_certification_program(
         Returns:
             Certification program status, user certifications, and tracking data
         """
-        try:'
+        
                 }
 
             await ctx.info(f"Managing certification program for client: {client_id}")

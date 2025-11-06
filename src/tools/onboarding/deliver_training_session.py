@@ -58,7 +58,7 @@ async def deliver_training_session(
         Returns:
             Training session details with attendance, engagement, and assessment results
         """
-        try:'
+        
                 }
 
             await ctx.info(f"Delivering training session for client: {client_id}")

@@ -49,7 +49,7 @@ async def activate_onboarding_automation(
         Returns:
             Activated automation configuration with triggers and workflows
         """
-        try:'
+        
                 }
 
             await ctx.info(f"Activating onboarding automation for client: {client_id}")
