@@ -48,10 +48,8 @@ from collections import defaultdict
 import re
 import structlog
 from src.models.support_models import (
-
-    from src.decorators import mcp_tool
+from src.decorators import mcp_tool
 from src.composio import get_composio_client
-
 async def handle_support_ticket(
         ctx: Context,
         ticket_id: Optional[str] = None,

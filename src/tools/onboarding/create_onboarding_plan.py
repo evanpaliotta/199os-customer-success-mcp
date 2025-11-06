@@ -27,10 +27,8 @@ from fastmcp import Context
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
 from src.models.onboarding_models import (
-
-    from src.decorators import mcp_tool
+from src.decorators import mcp_tool
 from src.composio import get_composio_client
-
 async def create_onboarding_plan(
         ctx: Context,
         client_id: str,

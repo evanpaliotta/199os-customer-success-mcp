@@ -20,10 +20,8 @@ from src.models.customer_models import ChurnPrediction, RiskIndicator
 from src.models.renewal_models import RenewalForecast
 from src.models.feedback_models import NPSResponse, SentimentAnalysis
 import structlog
-
-    from src.decorators import mcp_tool
+from src.decorators import mcp_tool
 from src.composio import get_composio_client
-
 async def execute_retention_campaign(
         ctx: Context,
         client_id: str,

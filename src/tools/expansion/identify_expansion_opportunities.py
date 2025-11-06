@@ -19,10 +19,8 @@ from src.models.renewal_models import RenewalForecast, ExpansionOpportunity, Con
 from src.database import SessionLocal
 from src.models.customer_models import CustomerAccount
 import structlog
-
-    from src.decorators import mcp_tool
+from src.decorators import mcp_tool
 from src.composio import get_composio_client
-
 async def identify_expansion_opportunities(
         ctx: Context,
         client_id: str = None,

@@ -21,10 +21,8 @@ from src.security.input_validation import validate_client_id, ValidationError
 from src.database import SessionLocal
 from src.database.models import CustomerAccount
 import structlog
-
-    from src.decorators import mcp_tool
+from src.decorators import mcp_tool
 from src.composio import get_composio_client
-
 async def get_client_overview(
         ctx: Context,
         client_id: str

@@ -42,10 +42,8 @@ from collections import defaultdict
 import re
 import structlog
 from src.models.support_models import (
-
-    from src.decorators import mcp_tool
+from src.decorators import mcp_tool
 from src.composio import get_composio_client
-
 async def manage_knowledge_base(
         ctx: Context,
         action: str = "search",

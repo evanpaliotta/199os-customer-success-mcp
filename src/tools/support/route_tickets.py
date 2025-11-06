@@ -34,10 +34,8 @@ from collections import defaultdict
 import re
 import structlog
 from src.models.support_models import (
-
-    from src.decorators import mcp_tool
+from src.decorators import mcp_tool
 from src.composio import get_composio_client
-
 async def route_tickets(
         ctx: Context,
         routing_strategy: str = "auto",

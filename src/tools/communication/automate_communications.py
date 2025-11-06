@@ -39,10 +39,8 @@ from src.security.input_validation import validate_client_id, ValidationError
 from src.integrations.sendgrid_client import SendGridClient
 from src.integrations.intercom_client import IntercomClient
 import structlog
-
-    from src.decorators import mcp_tool
+from src.decorators import mcp_tool
 from src.composio import get_composio_client
-
 async def automate_communications(
         ctx: Context,
         workflow_name: str,
