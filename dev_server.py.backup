@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+"""
+Hot-reload development wrapper for 199OS Customer Success MCP Server.
+Watches for file changes and automatically reloads the server.
+"""
+
+import sys
+import time
+import subprocess
+import signal
+from pathlib import Path
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+
+class ServerReloadHandler(FileSystemEventHandler):
+    def __init__(self):
+        self.process = None
+        self.restarting = False
+        self.start_server()
+
+    def start_server(self):
+        if self.restarting:
+            return
+
+        self.restarting = True
+
+        if self.process:
+            print("\n🔄 Stopping server...")
+            self.process.terminate()
+            try:
+                self.process.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                self.process.kill()
+                self.process.wait()
+
+        print("🚀 Starting 199OS Customer Success MCP Server with hot reload enabled...")
+        print("📝 Watching for changes in src/")
+        print("Press Ctrl+C to stop\n")
+
+        self.process = subprocess.Popen(
+            [sys.executable, "-u", "server.py"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1
+        )
+
+        self.restarting = False
+
+    def on_modified(self, event):
+        if event.src_path.endswith('.py') and not event.is_directory:
+            rel_path = Path(event.src_path).relative_to(Path.cwd())
+            print(f"\n📝 File changed: {rel_path}")
+            time.sleep(0.1)  # Debounce
+            self.start_server()
+
+if __name__ == "__main__":
+    handler = ServerReloadHandler()
+    observer = Observer()
+
+    # Watch the src directory for changes
+    observer.schedule(handler, path="./src", recursive=True)
+    observer.start()
+
+    def signal_handler(sig, frame):
+        print("\n\n🛑 Shutting down...")
+        observer.stop()
+        if handler.process:
+            handler.process.terminate()
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, signal_handler)
+
+    try:
+        # Keep printing server output
+        while True:
+            if handler.process and handler.process.poll() is None:
+                line = handler.process.stdout.readline()
+                if line:
+                    print(line, end='')
+            time.sleep(0.1)
+    except KeyboardInterrupt:
+        signal_handler(None, None)
+    finally:
+        observer.join()

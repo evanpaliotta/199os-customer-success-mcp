@@ -1,19 +1,6 @@
 """Customer Success Platform Integrations"""
 
-from .zendesk_client import ZendeskClient
-from .intercom_client import IntercomClient
-from .mixpanel_client import MixpanelClient
-from .sendgrid_client import SendGridClient
-from .salesforce_integration import SalesforceIntegration
-from .gmail_integration import GmailIntegration
-from .apollo_integration import ApolloIntegration
+# All custom integrations archived - will be replaced with Composio
+# See: archive/integrations/ for archived integration files
 
-__all__ = [
-    "ZendeskClient",
-    "IntercomClient",
-    "MixpanelClient",
-    "SendGridClient",
-    "SalesforceIntegration",
-    "GmailIntegration",
-    "ApolloIntegration"
-]
+__all__ = []

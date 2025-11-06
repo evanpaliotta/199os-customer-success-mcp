@@ -3,6 +3,7 @@ Customer Success Tools Package
 Registers all MCP tools organized by category
 """
 from typing import Optional, Dict, List, Any
+import sys
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -64,4 +65,4 @@ def register_all_tools(mcp) -> Any:
         logger.info(
             f"✓ All {registered_count} tool modules registered successfully"
         )
-        print(f"✅ All {registered_count} tool modules registered with MCP")
+        print(f"✅ All {registered_count} tool modules registered with MCP", file=sys.stderr)

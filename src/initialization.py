@@ -8,7 +8,7 @@ import socket
 import shutil
 import structlog
 from pathlib import Path
-from typing import Tuple, List
+from typing import Any, Tuple, List
 from importlib.metadata import version, PackageNotFoundError
 from packaging.version import parse as parse_version
 from mcp.server.fastmcp import FastMCP
